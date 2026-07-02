@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Remix: Remix: Remix: Fidel gebeta leleje / ፊደል ገበታ ለልጄ",
+  "description": "An interactive Amharic alphabet learning game for kids featuring handwriting tracking, audio guidance, parental control logs, and high contrast options.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
