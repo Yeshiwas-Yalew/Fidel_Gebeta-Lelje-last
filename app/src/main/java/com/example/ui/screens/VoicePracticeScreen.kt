@@ -409,14 +409,39 @@ fun VoicePracticeScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // Large target Amharic display
-                        Text(
-                            text = activeItem.character,
-                            fontSize = 90.sp,
-                            fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.primary,
-                            textAlign = TextAlign.Center
-                        )
+                        // Large target Amharic display with dedicated replay button next to it
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = activeItem.character,
+                                fontSize = 90.sp,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            FilledIconButton(
+                                onClick = {
+                                    viewModel.speakAmharicLetterWeb(activeItem.character, activeItem.phonetic)
+                                },
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .testTag("replay_active_letter_voice_practice"),
+                                colors = IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.VolumeUp,
+                                    contentDescription = "Replay pronunciation",
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
 
                         Text(
                             text = "Sounds like: \"${activeItem.phonetic}\"",

@@ -331,12 +331,36 @@ fun PracticeScreen(
                     }
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Letter: $activeLetter",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.padding(bottom = 2.dp)
+                        ) {
+                            Text(
+                                text = "Letter: $activeLetter",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            IconButton(
+                                onClick = {
+                                    viewModel.speakAmharicLetterWeb(activeLetter, activeLetterObj?.ttsPhonetic ?: activeLetter)
+                                },
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .testTag("replay_active_letter_practice_expert"),
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.VolumeUp,
+                                    contentDescription = "Replay pronunciation",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
                         Text(
                             text = "Expert Shuffled Sequence #${expertSeqIndex + 1}/${expertAlphabetSeq.size}",
                             fontSize = 11.sp,
@@ -378,12 +402,36 @@ fun PracticeScreen(
                     }
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Letter: $activeLetter (${activeFamily.familyName})",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.padding(bottom = 2.dp)
+                        ) {
+                            Text(
+                                text = "Letter: $activeLetter (${activeFamily.familyName})",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            IconButton(
+                                onClick = {
+                                    viewModel.speakAmharicLetterWeb(activeLetter, activeLetterObj?.ttsPhonetic ?: activeLetter)
+                                },
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .testTag("replay_active_letter_practice_easy"),
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.VolumeUp,
+                                    contentDescription = "Replay pronunciation",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
                         Text(
                             text = "Easy Session Progress $sessionDrawnCount/5 🎨",
                             fontSize = 11.sp,

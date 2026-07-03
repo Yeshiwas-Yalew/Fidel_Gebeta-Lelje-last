@@ -596,7 +596,8 @@ class FidelViewModel(application: Application) : AndroidViewModel(application), 
             "ELDER" -> "Charon" to "with a wise, gentle, grandfatherly, slow, and highly respected elder's native Amharic voice"
             "TEACHER" -> "Kore" to "with a clear, instructional, articulate, professional, and patient native Amharic teacher's voice"
             "CHUNI" -> "Aoede" to "with a sweet, extremely joyful, cute, and lively native Amharic voice"
-            else -> "Kore" to "with a warm, friendly, and natural native Amharic voice"
+            "DEFAULT" -> "Aoede" to "with a clear, sweet, patient, and highly standard native Amharic tutor's voice"
+            else -> "Aoede" to "with a clear, sweet, patient, and highly standard native Amharic tutor's voice"
         }
     }
 
@@ -835,6 +836,7 @@ class FidelViewModel(application: Application) : AndroidViewModel(application), 
                                     setDataSource(getAudioContext(), android.net.Uri.fromFile(tempFile))
                                     prepareAsync()
                                     setOnPreparedListener {
+                                        applyVoiceParams()
                                         start()
                                     }
                                     setOnErrorListener { mp, _, _ ->
@@ -907,6 +909,7 @@ class FidelViewModel(application: Application) : AndroidViewModel(application), 
                                 setDataSource(getAudioContext(), android.net.Uri.fromFile(tempFile))
                                 prepareAsync()
                                 setOnPreparedListener {
+                                    applyVoiceParams()
                                     start()
                                 }
                                 setOnErrorListener { mp, _, _ ->

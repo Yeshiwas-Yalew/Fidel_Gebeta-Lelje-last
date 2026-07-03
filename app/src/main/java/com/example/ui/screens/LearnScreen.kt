@@ -518,22 +518,51 @@ fun LearnScreen(
                                                 )
                                             }
                                             Column {
-                                                Text(
-                                                    text = "${activeLetter!!.character} - Sounds like: \"${activeLetter!!.phonetic}\"",
-                                                    fontSize = 18.sp,
-                                                    fontWeight = FontWeight.Black,
-                                                    color = MaterialTheme.colorScheme.primary
-                                                )
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    Text(
+                                                        text = activeLetter!!.character,
+                                                        fontSize = 24.sp,
+                                                        fontWeight = FontWeight.Black,
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+                                                    IconButton(
+                                                        onClick = {
+                                                            viewModel.speakAmharicLetterWeb(activeLetter!!.character, activeLetter!!.ttsPhonetic)
+                                                        },
+                                                        modifier = Modifier
+                                                            .size(32.dp)
+                                                            .testTag("replay_active_letter_learn_icon"),
+                                                        colors = IconButtonDefaults.iconButtonColors(
+                                                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                                        )
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.VolumeUp,
+                                                            contentDescription = "Replay pronunciation",
+                                                            modifier = Modifier.size(16.dp)
+                                                        )
+                                                    }
+                                                }
                                                 Spacer(modifier = Modifier.height(2.dp))
                                                 Text(
+                                                    text = "Sounds like: \"${activeLetter!!.phonetic}\"",
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                                )
+                                                Text(
                                                     text = "Word: ${activeLetter!!.word} (${activeLetter!!.translit})",
-                                                    fontSize = 15.sp,
+                                                    fontSize = 13.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = MaterialTheme.colorScheme.onSecondaryContainer
                                                 )
                                                 Text(
                                                     text = "Means: ${activeLetter!!.english}",
-                                                    fontSize = 13.sp,
+                                                    fontSize = 12.sp,
                                                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
                                                 )
                                             }
