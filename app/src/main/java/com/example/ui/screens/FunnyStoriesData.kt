@@ -8,12 +8,14 @@ val funnyStoriesList = listOf(
         "🐺",
         "ካልጠበቁት ቦታ ደስታ ሊገኝ ይችላል። (Happiness can be found in unexpected places.)",
         listOf(
-            "በአንድ ወቅት፥ አንድ ጅብ በጫካ ውስጥ ሲጓዝ ከበሮ ሲመታ ሰማ። ሰዎቹ ሲጨፍሩ አይቶ እሱም አብሮ መደነስ ጀመረ። ነገር ግን እግሩ ተጠልፎ ጉድጓድ ውስጥ ወደቀ።",
-            "ጅቡ ጉድጓድ ውስጥ ሆኖ 'ይህም የጭፈራዬ አካል ነው!' እያለ መደነሱን ቀጠለ። እንስሳቱ ሁሉ በእሱ ሞኝነት እየሳቁ አለፉ።"
+            "በአንድ ወቅት፥ ኮኮ የሚባል በጣም ተወዳጅ ነገር ግን በጣም ሰነፍ ጅብ በጥልቁ ጫካ ውስጥ ይኖር ነበር። ኮኮ በየቀኑ የሚበላው ነገር ሲያጣ፥ ሌሎች እንስሳት ሲጨፍሩ እያየ 'የዳንስ ኮከብ መሆን እችላለሁ!' ብሎ ያልማ ነበር። አንድ ቀን በመንደሩ ውስጥ ትልቅ የከበሮ ድምፅ ሰማና፥ ሰዎቹ በጥላው ስር በደስታ ሲጨፍሩ አያቸው። ኮኮም ወዲያው በደስታ እየጮኸና በሁለት እግሮቹ እየቆመ በሰዎቹ ፊት መደነስ ጀመረ።",
+            "ነገር ግን ሰዎቹ እሱን ሲያዩት 'ሌባ ጅብ መጣ!' ብለው መጮህና መሸሽ ጀመሩ። ኮኮ ግን ሰዎቹ በእሱ ምርጥ የዳንስ እንቅስቃሴ ተገርመውና ደንግጠው የሚሮጡ መስሎት፥ ጭፈራውን ይበልጥ አጧጧፈው። ወዲያውም በአንድ እግሩ ለመዞር ሲሞክር፥ እግሩ በዱር ገመድ ተጠልፎ ወደ አንድ ጥልቅና ጭቃ በበዛበት ጉድጓድ ውስጥ 'ዱብ!' ብሎ ወደቀ።",
+            "ኮኮ ጉድጓዱ ውስጥ ሆኖ ምንም አልደነገጠም፤ ይልቁንም 'ይህ እኮ አዲሱ የከርሰ-ምድር ዳንስ ዘይቤዬ ነው!' እያለ ጭቃውን በጭንቅላቱ ላይ እያፈሰሰ መደነሱን ቀጠለ። በዚያ የሚያልፉት እንስሳት በሙሉ ኮኮ በጭቃ ተሸፍኖ ሲደንስ እያዩ ሆዳቸውን እስኪይዙ ድረስ በሳቅ ፈነዱ። ኮኮ ግን 'ሁሉም እንስሳት ጭፈራዬን ወደዱት!' ብሎ በደስታ ይበልጥ ሳቀ።"
         ),
         listOf(
-            "Once, a hyena traveling through the forest heard drums beating. Seeing the people dancing, he started dancing along, but tripped and fell into a hole.",
-            "From inside the hole, the hyena shouted, 'This is also part of my dance!' and kept dancing. All the animals laughed at his silly attitude."
+            "Once upon a time, there lived a very popular but lazy hyena named Koko in the deep forest. When Koko had nothing to eat, he watched other animals dance and dreamed, 'I can be a superstar dancer!' One day, he heard loud drumming in a nearby village and saw people dancing happily under the shade. Koko immediately howled with joy, stood on his hind legs, and started dancing in front of them.",
+            "But when the people saw him, they yelled, 'A thief hyena is here!' and ran away in panic. Koko, thinking they were running away because they were utterly amazed and shocked by his spectacular dance moves, accelerated his routine even more. Suddenly, while attempting a one-legged spin, he tripped on a wild vine and fell 'Doob!' into a deep, muddy pit.",
+            "Koko, stuck in the muddy pit, was not discouraged at all; instead, he shouted, 'This is my new underground dance style!' and kept dancing while splashing mud all over his head. All the animals passing by laughed hysterically at the sight of Koko dancing covered in mud. Koko smiled happily, thinking, 'The entire forest loves my show!' and laughed even louder."
         )
     ),
     StoryModel(
@@ -23,12 +25,14 @@ val funnyStoriesList = listOf(
         "🐒",
         "ለራስህ የማይስማማህን ነገር ለማድረግ አትሞክር። (Don't try to do things that do not suit you.)",
         listOf(
-            "አንዲት ጦጣ ሰው መነጽር አድርጎ ሲያነብ አየች። እሷም አንድ ትልቅ መነጽር አግኝታ አደረገች። ነገር ግን መነጽሩ አይኗን ስለሸፈነው ምንም ማየት አቃታት።",
-            "ዛፍ ላይ ለመውጣት ስትሞክር ዘላ መሬት ላይ ወደቀች። መነጽሩን አውልቃ 'ይህ የሰዎች አስማት እኔን አላስማማኝም!' ብላ ጣለችው።"
+            "ሚሚ የምትባል በጣም ቀልደኛና ፋሽን ወዳድ ጦጣ በትልቅ የባኦባብ ዛፍ ላይ ትኖር ነበር። ሚሚ በአቅራቢያዋ በሚኖረው ሳይንቲስት ቤት ውስጥ ሰዎች ጥቁር መነጽር አድርገው ፀሐይ ላይ ሲቀመጡና መጽሐፍ ሲያነቡ በጉጉት ትከታተል ነበር። 'እኔም መነጽር ካደረግኩኝ እንደ ሰዎቹ በጣም ብልጥና ቆንጆ እሆናለሁ!' ብላ አሰበች። አንድ ቀን ሳይንቲስቱ መነጽሩን ጠረጴዛ ላይ ረስተውት ሲሄዱ፥ ሚሚ በបង្ኮኒ በኩል ሾልካ ገብታ በትልቁ ጥቁር መነጽር ላይ አረፈች።",
+            "ሚሚ መነጽሩን ወስዳ ፊቷ ላይ አደረገችው። ነገር ግን መነጽሩ ለፊቷ በጣም ትልቅ ስለነበር አፍንጫዋንና አይኖቿን በሙሉ ሸፈናቸው። ዓለም በሙሉ ጥቁርና ጨለማ ሆነችባት። ሚሚ ግን 'ይህ እኮ የብልጦች ልዩ ብርሃን ነው!' ብላ በኩራት በማሰብ፥ ዛፍ ላይ ወጥታ ለሌሎቹ ጦጣዎች አዲሱን ፋሽን ለማሳየት ወሰነች። በመንገዷ ላይ ግን ጨለማ ስለነበር በአንድ ትልቅ ቅርንጫፍ ላይ ተደናቅፋ 'እየዬዬ!' እያለች መሬት ላይ በሆዷ ተንሸራታ ወደቀች።",
+            "ሌሎች ጦጣዎች በሙሉ በሚሚ የፋሽን ትዕይንትና ውድቀት በሳቅ እየፈነዱ መሬት ላይ ወደቁ። ሚሚ መነጽሩን አውልቃ በንዴት መሬት ላይ ጣለችውና 'ይህ የሰዎች አስማታዊ መነጽር እኔን አላስማማኝም፤ ምክንያቱም እኔ እንደ ሰዎቹ ሰነፍ ሳልሆን በጣም ፈጣንና ዛፍ ላይ የምበር ጦጣ..."
         ),
         listOf(
-            "A monkey saw a human reading with glasses. She found a big pair of sunglasses and put them on. But they covered her eyes, and she couldn't see anything.",
-            "When she tried to climb a tree, she missed the branch and fell. Taking them off, she said, 'This human magic doesn't suit me!' and threw them away."
+            "Mimi was a very funny and fashion-loving monkey who lived in a giant baobab tree. Mimi used to watch the humans at the nearby scientist's house wearing black sunglasses while sunbathing and reading books. 'If I wear sunglasses, I will look as smart and handsome as them!' she thought. One day, when the scientist forgot his sunglasses on the table, Mimi slipped in through the balcony and grabbed them.",
+            "Mimi put the sunglasses on her face, but they were so big that they covered her nose, eyes, and entire face. The whole world suddenly turned pitch black. Mimi thought, 'This must be the special dark vision of smart people!' and decided to climb the tree to show off her new fashion to the other monkeys. But since she couldn't see, she tripped on a giant branch and slid flat on her belly to the ground, crying 'Eyeyeye!'.",
+            "All the other monkeys rolled on the ground laughing at Mimi's fashion show and epic fall. Mimi took off the glasses, threw them to the ground angrily, and said, 'This human magic doesn't suit me anyway! Unlike lazy humans who sit around, I am a fast monkey who flies through the trees!' and started eating a banana. The monkeys laughed at Mimi's pride and kept playing."
         )
     ),
     StoryModel(
@@ -38,12 +42,14 @@ val funnyStoriesList = listOf(
         "🐢",
         "ከመጠን በላይ መናገር አደጋ ሊያመጣ ይችላል። (Too much talking can lead to trouble.)",
         listOf(
-            "ኤሊዋ ከሁለት ወፎች ጋር መጓዝ ፈለገች። ወፎቹ አንድ እንጨት በአፋቸው ያዙና ኤሊዋ እንጨቱን በመሃል በጥርሷ እንድትይዝ አደረጉ። 'በፍጹም አፍሽን እንዳትከፍቺ!' ብለው አስጠነቀቋት።",
-            "ወደ ሰማይ ሲበሩ ሰዎች 'አይ ኤሊ በሰማይ ስትበር!' ብለው ጮኹ። ኤሊዋ ልትመልስላቸው 'እኔማ...' ብላ አፏን ስትከፍት ቁልቁል ወደ መሬት ሳር ላይ ወደቀች።"
+            "ቶቶ የምትባል እጅግ በጣም ወሬኛና ፈገግታ ወዳድ ኤሊ በአንድ ኩሬ ዳርቻ ላይ ትኖር ነበር። ቶቶ ጠዋት ከእንቅልፏ ስትነሳ መናገር ከጀመረች ማታ እስክትተኛ ድረስ አፏ በፍጹም አይዘጋም ነበር፤ ሌላው ቀርቶ ስትተኛ እንኳ በእንቅልፍዋ ቀልዶችን ትናገር ነበር። አንድ ቀን ሁለት ደጎችና በጣም ፈጣን ወፎች ወደ ሌላ ጣፋጭ ሳር ወዳለበት ሜዳ ለመብረር ሲዘጋጁ ቶቶ 'እባካችሁ እኔንም ውሰዱኝ፥ ወሬዬን እየሰማችሁ መንገዱን ታሳልፋላችሁ!' ብላ ለመነቻቸው።",
+            "ወፎቹ ቶቶ ወሬኛ መሆኗን ስለሚያውቁ 'እሺ ግን አንድ ደንብ አለ፤ እኛ በአፋችን የምንይዘውን እንጨት አንቺ በመሃል በጥርሶችሽ ትይዣለሽ። በፍጹም አፍሽን ከፍተሽ መናገር የለብሽም!' ብለው አስጠነቀቋት። ቶቶም 'እሺ ቃሌን እጠብቃለሁ!' ብላ እንጨቱን በጥርሷ አጥብቃ ያዘችና ወደ ሰማይ በረሩ። ቶቶ በአየር ላይ ስትበር ወሬ የመናገር ፍላጎቷ በጣም እየጨመረባት መጣ፤ ሆዷ በወሬ እረፍት አጣ።",
+            "ወደ መንደሩ ሲቃረቡ፥ ሰዎቹ ወደ ሰማይ እያዩ 'ዋው! ኤሊ በሰማይ ላይ ስትበር! ይህችስ ኤሊ ምን ዓይነት አስማተኛ ናት!' እያሉ መጮህና መደነቅ ጀመሩ። ቶቶ ይህንን ስትሰማ ኩራት ተሰማትና 'እኔ እኮ የሰማይ ላይ ኮከብ ነኝ!' ብላ ልትመልስላቸው አፏን ስትከፍት እንጨቱን ለቀቀችውና 'እዬዬዬ!' እያለች ወደታች ቁልቁል ወደ መሬት ተንሸራታ ለስላሳ ሳር ላይ ወደቀች። ቶቶ ግን ሳሩን እያኘከች 'ለነገሩ እኔም እዚህ መውረድ ስለፈለግኩ ነው!' ብላ ሳቀች።"
         ),
         listOf(
-            "A tortoise wanted to travel with two birds. The birds held a stick in their beaks and had her bite the middle. They warned her, 'Do not open your mouth!'",
-            "As they flew high, people shouted, 'Look at that flying tortoise!' The tortoise opened her mouth to say 'Well, I...' and tumbled down onto the soft grass."
+            "To-To was an extremely talkative and cheerful tortoise who lived by a pond. From the moment To-To woke up until she went to sleep, her mouth never stopped; she even mumbled jokes in her sleep. One day, when two kind and fast birds were preparing to fly to a meadow full of sweet grass, To-To pleaded, 'Please take me with you! You will enjoy my jokes and the long journey will feel short!'",
+            "The birds, knowing how chatty she was, warned her, 'Okay, but there is one strict rule: you must bite the middle of this stick, and we will carry it in our beaks. Do not open your mouth to talk under any circumstance!' To-To promised and bit the stick tightly as they soared into the sky. Flying high, To-To felt an overwhelming urge to talk; her stomach was bursting with untold gossip.",
+            "As they neared a village, people looked up and shouted, 'Wow! A flying tortoise! What kind of magical tortoise is that!' To-To felt incredibly proud and opened her mouth to reply, 'Well, I am actually a superstar of the sky!', losing her grip on the stick and tumbling down, shouting 'Eyeyeye!' onto soft grass. To-To just started chewing the grass and said, 'Well, I wanted to land here anyway!' and giggled."
         )
     ),
     StoryModel(
@@ -53,12 +59,14 @@ val funnyStoriesList = listOf(
         "🐓",
         "ስራህን በጊዜ መስራት ሰላም ይሰጣል። (Doing your duties on time brings peace.)",
         listOf(
-            "አንድ አውራ ዶሮ ማለዳ መጮህ ሰልችቶት ነበር። 'ዛሬ አልጮህም፥ ፀሐይ እራሷ ትውጣ!' ብሎ ተኛ።",
-            "ነገር ግን ሌሎች ዶሮዎች በጊዜው ቀስቅሰውት ሲስቁበት 'እንዴ! እኔ ሳልጮህ እንዴት ነጋ?' ብሎ በመገረም ጮኸ።"
+            "ሮኪ የሚባል በጣም ቀልደኛ፥ ሰነፍና በራሱ ላይ ትልቅና ደማቅ ቀይ ዘውድ ያለው አውራ ዶሮ በጥንታዊ የእርሻ ቦታ ውስጥ ይኖር ነበር። ሮኪ በየቀኑ ጠዋት አምስት ሰዓት ላይ ሰዎችን ከመቀስቀስ ይልቅ ራሱ ተኝቶ 'ሰዎች በራሳቸው ስልክ መቀስቀሻ ቢጠቀሙ አይሻልም?' እያለ ያንኮራፋ ነበር። አንድ ቀን የእርሻው ባለቤት 'ሮኪ ካልጮኸ ዛሬ እራት እንሰራዋለን!' ብሎ ሲናገር ሰማው።",
+            "ሮኪ በጣም ደነገጠና 'ዛሬማ የግድ መጮህ አለብኝ!' ብሎ ወሰነ። ማታውን በሙሉ ሳይተኛ በጭንቀት አሳለፈ። ነገር ግን ጠዋት ፀሐይ ከመውጣቷ በፊት በሳቅና በቀልድ የተሞላ ህልም እያየ እንቅልፍ ወሰደው። ሮኪ በህልሙ እራሱን የጫካው ንጉስ አድርጎ እያየ በደስታ 'ኩኩሉኡኡኡ!' ብሎ በመጮህ ፈንታ 'ሃሃሃሃ! በጣም ይስቃል!' እያለ በህልሙ ይጮህ ጀመር።",
+            "ሰዎቹ በጥዋት የዶሮውን የሳቅ ድምፅ ሰምተው በመገረም ከእንቅልፋቸው ተነስተው ወደ በረቱ መጡ። ሮኪ ሲነቃ ሰዎቹ በሙሉ በእሱ ላይ እየሳቁ አገኛቸው። የእርሻው ባለቤት 'ይህ ዶሮ በየቀኑ ጠዋት እያስነቃን በሳቅ ቢቀሰቅሰን በጣም ደስ ይላል፤ ስለዚህ በፍጹም አንበላውም!' ብሎ ወሰነ። ሮኪም ከዚያን ቀን ጀምሮ በሳቅ እየቀሰቀሰ በጥሩ ሁኔታና በደስታ ኖረ።"
         ),
         listOf(
-            "A rooster got tired of crowing early. He said, 'I won't crow today, let the sun rise by itself!' and went back to sleep.",
-            "But the other chickens woke him up on time and laughed, prompting him to shout, 'Wait! How did morning come without my permission?'"
+            "Rocky was a very funny, lazy rooster with a huge, bright red comb on his head, living on an old farm. Instead of waking up people at dawn, Rocky slept in until noon, snoring and thinking, 'Why can't humans just use alarms on their phones?' One day, he overheard the farmer saying, 'If Rocky doesn't crow tomorrow at dawn, he will become our dinner!'",
+            "Rocky panicked and decided, 'I absolutely must crow tomorrow!' He stayed awake all night in anxiety. However, right before dawn, he fell asleep and had a hilarious dream. In his dream, imagining himself as the king of the jungle, instead of crowing 'Kookooloo!', Rocky started laughing hysterically, shouting 'Hahaha! That is so funny!' in his sleep.",
+            "Hearing a rooster laughing at dawn, the puzzled villagers woke up and ran to the coop. When Rocky woke up, he found everyone laughing with him. The farmer declared, 'A rooster who wakes us up with laughter is priceless; we will never eat him!' From that day on, Rocky kept waking the farm up with giggles and lived a long, happy life."
         )
     ),
     StoryModel(
@@ -68,12 +76,14 @@ val funnyStoriesList = listOf(
         "🐴",
         "የራስህን የተፈጥሮ ድምፅ ውደድ። (Appreciate your own natural gifts.)",
         listOf(
-            "አንድ አህያ የአእዋፍን ዜማ ሰምቶ በጣም ቀና። 'እኔም እንደነሱ መዘመር እችላለሁ!' ብሎ በሃይል ይጮህ ጀመር።",
-            "እንስሳቱ ሁሉ ጆሯቸውን ይዘው ሮጡ። አህያው ግን 'በጣም ስለወደዱት ነው የሸሹት!' ብሎ ደስ አለው።"
+            "በጥልቁ ጫካ ውስጥ ባርኒ የሚባል በጣም ቀልደኛና ጆሮዎቹን እንደ አየር ማራገቢያ ማወዛወዝ የሚወድ አህያ ይኖር ነበር። ባርኒ በየቀኑ በጫካው ውስጥ የሚኖሩትን ውብ ዘማሪ አእዋፍ ዜማ ሲሰማ በጣም ይቀና ነበር። 'እኔም እንደነሱ በጣም የሚጣፍጥና ልብ የሚነካ የኦፔራ ድምፅ አለኝ፤ ዝም ብዬ ነው ጉሮሮዬን ያልከፈትኩት!' ብሎ ያስብ ነበር። አንድ ቀን ለጫካው እንስሳት ታላቅ የሙዚቃ ኮንሰርት ለማቅረብ ወሰነ።",
+            "ባርኒ በትልቅ ዛፍ ግንድ ላይ ወጥቶ ቆመና፥ ጆሮዎቹን እያወዛወዘ እንስሳቱን በሙሉ ሰበሰባቸው። 'ክቡራንና ክቡራት፥ አሁን የጫካው ታላቅ የኦፔራ ዘፋኝ ባርኒ ታላቅ ዜማውን ያቀርባል!' ብሎ ተናገረ። ከዚያም በረጅሙ ተንፍሶ በሃይሉ 'ኢ-አአአአ! እይ-ኦኦኦኦ!' እያለ መጮህ ጀመረ። የባርኒ ድምፅ በጣም ከፍተኛና አስፈሪ ስለነበር ጫካው በሙሉ ተናወጠ፤ የወፎቹም ጎጆዎች ከዛፍ ላይ ሊወድቁ ደረሱ።",
+            "እንስሳቱ በሙሉ ጆሮዎቻቸውን በትላልቅ ቅጠሎች ሸፍነው ወደተለያዩ አቅጣጫዎች በፍጥነት ሮጡ። ባርኒ ግን እንስሳቱ በዜማው ውበት በጣም ተደንቀውና ልባቸው ተነክቶ ለደስታ ሲሉ እየጨፈሩና እየሮጡ መስሎት ይበልጥ በደስታ 'ኢ-አአአ!' እያለ መጮኹን ቀጠለ። በመጨረሻም ኮንሰርቱን ሲጨርስ 'ዋው! የመጀመሪያዬ ኮንሰርት በጣም የተሳካ ነበር፤ ሁሉም እንስሳት በደስታ እብድ ሆኑ!' ብሎ በኩራት ፈገግ አለ። ከዚያን ቀን ጀምሮ ባርኒ እራሱን የጫካው የሮክ ኮከብ አድርጎ ወሰነ።"
         ),
         listOf(
-            "A donkey was jealous of the birds' beautiful singing. He thought, 'I can sing just like them!' and began braying as loudly as he could.",
-            "All the animals covered their ears and ran away. The donkey smiled, thinking they ran because they were overwhelmed by his beauty!"
+            "Barney was a very funny donkey who loved waving his huge ears like fans, living in the deep forest. Barney was extremely jealous of the beautiful singing birds' sweet melodies. 'I have a sweet, touching opera voice too; I just haven't warmed up my throat yet!' he thought. One day, he decided to host a grand music concert for all the forest animals.",
+            "Barney climbed onto a big fallen tree trunk, waved his ears, and gathered all the animals. 'Ladies and gentlemen, the great forest opera singer Barney will now perform his masterpiece!' he announced. He took a deep breath and brayed with all his might, 'Ee-aaa! Ee-ooo!'. Barney's voice was so incredibly loud and wild that the entire forest vibrated, and bird nests almost fell off the trees.",
+            "All the animals covered their ears with large leaves and scattered in every direction. Barney, thinking they were so deeply touched and overwhelmed by his beautiful melody that they were dancing and running in pure ecstasy, brayed even louder with joy. When he finished, he smiled proudly, thinking, 'Wow! My debut concert was a massive success; the audience literally went wild!' From that day on, Barney considered himself the ultimate rock star of the forest."
         )
     ),
     StoryModel(

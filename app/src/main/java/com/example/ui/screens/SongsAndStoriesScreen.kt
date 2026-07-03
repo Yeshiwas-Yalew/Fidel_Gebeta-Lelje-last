@@ -30,8 +30,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.*
+import androidx.compose.foundation.horizontalScroll
 import com.example.ui.ChildSong
 import com.example.ui.FidelViewModel
+import com.example.ui.InstrumentStyle
 import org.json.JSONObject
 import org.json.JSONArray
 
@@ -100,6 +102,58 @@ val staticSongsList = listOf(
             LyricsLine("ለ ሉ ሊ ላ ሌ ል ሎ፥", "La Lu Li La Le Li Lo", "La Lu Li La Le Li Lo,", "ለ ሉ ሊ ላ ሌ ል ሎ"),
             LyricsLine("እውቀት ይጨምርልን።", "Iwqet yichemrilin", "May our wisdom grow!", "እውቀት ይጨምርልን")
         )
+    ),
+    SongModel(
+        "twinkle",
+        "ብልጭ ብልጭ ኮከብ",
+        "Twinkle Twinkle",
+        "🌟",
+        ChildSong.TWINKLE,
+        listOf(
+            LyricsLine("ብልጭ ብልጭ ኮከብ፥", "Bilich bilich kokeb", "Twinkle twinkle little star,", "ብልጭ ብልጭ ኮከብ"),
+            LyricsLine("በሰማይ ላይ የምታበራ፥", "Besemay lay yemtabera", "Shining bright in the night sky,", "በሰማይ ላይ የምታበራ"),
+            LyricsLine("እንደ አልማዝ ውብ ሆነህ፥", "Inde almaz wub honeh", "Like a beautiful diamond,", "እንደ አልማዝ ውብ ሆነህ"),
+            LyricsLine("ሁሉንም ታስደስታለህ።", "Hulunim tasdestaleh", "You bring joy to everyone.", "ሁሉንም ታስደስታለህ")
+        )
+    ),
+    SongModel(
+        "mary_lamb",
+        "ትንሿ በግ",
+        "Little Lamb",
+        "🐑",
+        ChildSong.MARY_LAMB,
+        listOf(
+            LyricsLine("ማርያም ትንሽ በግ አላት፥", "Maryam tinish beg alat", "Mary had a little lamb,", "ማርያም ትንሽ በግ አላት"),
+            LyricsLine("ሱፍዋ እንደ በረዶ የነጣ፥", "Sufwa inde beredo yeneta", "Whose fleece was white as snow,", "ሱፍዋ እንደ በረዶ የነጣ"),
+            LyricsLine("የትም ቦታ ብትሄድ፥", "Yetim bota bithihed", "And everywhere that Mary went,", "የትም ቦታ ብትሄድ"),
+            LyricsLine("በጓ አትለይማት።", "Begwa atleyimat", "The lamb was sure to go.", "በጓ አትለይማት")
+        )
+    ),
+    SongModel(
+        "row_boat",
+        "ጀልባህን ንዳ",
+        "Row Your Boat",
+        "🚣",
+        ChildSong.ROW_BOAT,
+        listOf(
+            LyricsLine("ንዳ ንዳ ጀልባህን፥", "Nida nida jelbahin", "Row, row, row your boat,", "ንዳ ንዳ ጀልባህን"),
+            LyricsLine("በቀስታ በወንዙ ላይ፥", "Beqesta bewenzu lay", "Gently down the stream,", "በቀስታ በወንዙ ላይ"),
+            LyricsLine("በደስታ በደስታ፥", "Bedesta bedesta", "Merrily, merrily, merrily,", "በደስታ በደስታ"),
+            LyricsLine("ሕይወት ደስ የሚል ህልም ናት።", "Hiywet des yemil hilm nat", "Life is but a beautiful dream.", "ሕይወት ደስ የሚል ህልም ናት")
+        )
+    ),
+    SongModel(
+        "brother_john",
+        "ወንድም ዮሐንስ",
+        "Brother John",
+        "🔔",
+        ChildSong.BROTHER_JOHN,
+        listOf(
+            LyricsLine("ወንድም ዮሐንስ፥ ወንድም ዮሐንስ፥", "Wendim Yohannis Wendim Yohannis", "Are you sleeping, Brother John?", "ወንድም ዮሐንስ ወንድም ዮሐንስ"),
+            LyricsLine("ገና ተኝተሃል? ገና ተኝተሃል?", "Gena tegnytehal Gena tegnytehal", "Are you still sleeping? Are you still sleeping?", "ገና ተኝተሃል? ገና ተኝተሃል?"),
+            LyricsLine("ደወሉ ይደውላል፥ ደወሉ ይደውላል፥", "Dewelu yidewilal Dewelu yidewilal", "The morning bells are ringing,", "ደወሉ ይደውላል ደወሉ ይደውላል"),
+            LyricsLine("ዲንግ ዲንግ ዶንግ! ዲንግ ዲንግ ዶንግ!", "Ding ding dong Ding ding dong", "Ding, ding, dong! Ding, ding, dong!", "ዲንግ ዲንግ ዶንግ ዲንግ ዲንግ ዶንግ")
+        )
     )
 )
 
@@ -111,12 +165,14 @@ val staticStoriesList = listOf(
         "🦁",
         "ትንሽም ቢሆን ትልቅ እርዳታ ሊያደርግ ይችላል። (Even a small helper can make a big difference!)",
         listOf(
-            "በአንድ ወቅት፥ አንድ ትልቅ አንበሳ ጫካ ውስጥ ተኝቶ ነበር። አንዲት ትንሽ አይጥ በእሱ ላይ እየሮጠች ከእንቅልፉ አነቃችው። አንበሳው ተቆጥቶ ሊበላት ሲል፥ አይጧ 'እባክህ አትግደለኝ፥ እኔም አንድ ቀን እረዳሃለሁ!' ብላ ለመነችው። አንበሳው ስቆ ለቀቃት።",
-            "ከጥቂት ቀናት በኋላ፥ አንበሳው በአዳኞች መረብ ውስጥ ወደቀ። ምንም መውጫ አጥቶ ሲጮህ፥ ትንሿ አይጥ ድምፁን ሰምታ መጣች። መረቡን በጥርሷ እየቆረጠች አንበሳውን አዳነችው። ከዚያን ቀን ጀምሮ ጓደኛሞች ሆኑ።"
+            "በአንድ ወቅት፥ አንድ ቶኒ የሚባል በጣም ሰነፍና የሚያንኮራፋ ትልቅ አንበሳ በጥልቁ ጫካ ውስጥ ይኖር ነበር። ቶኒ በየቀኑ ለ20 ሰዓታት ይተኛል፤ ሲያንኮራፋም ጫካው በሙሉ እንደ ቡና መፍጫ ማሽን ይንቀጠቀጥ ነበር። አንድ ቀን አንዲት ሮዝ የምትባል በጣም ቀልደኛና ፈጣን አይጥ በቶኒ ጅራት ላይ ስትጫወት ቆይታ፥ በድንገት አፍንጫው ላይ ወጥታ 'እንዳልንሸራተት ጫፉን ልያዘው!' ስትል አፍንጫውን ቆነጠጠችውና ከእንቅልፉ አነቃችው።",
+            "ቶኒ በጣም ተቆጥቶ በታላቅ ድምፅ አገሳና ሮዝን በትላልቅ ጥፍሮቹ ይዞ 'አንቺ ትንሿ ፍጡር እንቅልፌን ያቋረጥሽው እራት ልትሆኚኝ ነው!' አላት። ሮዝ ግን በጭራሽ ሳትደነግጥ ሳቀችና 'አንበሳዬ እባክህ አትብላኝ! እኔ እኮ የጫካው ምርጥ ኮሜዲያን ነኝ፤ ዛሬ ብትለቀኝ በሚቀጥለው ጊዜ በአስቸጋሪ ሁኔታ ውስጥ ስትሆን በጣም የሚያስቅ ቀልድ ነግሬ አድንሃለሁ!' ብላ ለመነችው። ቶኒም 'የአይጥ ኮሜዲያን!' ብሎ በመገረም ስቆ ለቀቃት።",
+            "ከጥቂት ቀናት በኋላ፥ ቶኒ ሰነፍ ስለነበር አይኑን ጨፍኖ ሲጓዝ በአዳኞች የተዘረጋ ትልቅ መረብ ውስጥ ተጠላለፈ። ምንም መውጫ አጥቶ እንደ መኪና ጥሪ ሲጮህ፥ ሮዝ ድምፁን ሰምታ በፍጥነት መጣች። ወዲያውኑ 'አይዞህ አንበሳዬ! አሁን መረቡን በጥርሴ እየቆረጥኩ ሳሳቅህ አያለሁ!' ብላ ጀመረች። ሮዝ መረቡን በጥርሷ እየቆረጠች 'ለምንድነው አንበሳ ከብት የማይበላው? ምክንያቱም የቬጀቴሪያን ኮፍያ ስላለው!' እያለች አስቂኝ ቀልዶችን ትነግረው ነበር። ቶኒ በሳቅ እየፈነዳ መረቡን ረሳውና ወዲያውኑ በነፃነት ተለቀቀ። ከዚያን ቀን ጀምሮ ቶኒና ሮዝ ምርጥ የኮሜዲ ጓደኛሞች ሆኑ!"
         ),
         listOf(
-            "Once, a big lion was sleeping in the forest. A tiny mouse ran across his body and woke him up. The angry lion was about to eat her when the mouse pleaded, 'Please spare me, and I might help you one day!' The lion laughed and let her go.",
-            "A few days later, the lion fell into a hunter's trap. Unable to escape, he roared loudly. The little mouse heard him and rushed over. She chewed through the ropes of the net and set the lion free. From that day on, they became best friends."
+            "Once upon a time, there lived a very lazy and loud-snoring big lion named Tony in the deep forest. Tony slept for 20 hours a day, and when he snored, the entire forest shook like a coffee grinder. One day, a very playful and fast mouse named Rose was playing on Tony's tail, and suddenly ended up on his nose, pinching it to avoid slipping, which woke him up.",
+            "Tony was extremely angry, roared loudly, and caught Rose with his giant claws, saying, 'You tiny creature, you interrupted my sleep to become my dinner!' But Rose, not panicking at all, giggled and said, 'Oh lion, please don't eat me! I am the forest's best comedian; if you let me go, I will save you next time with a super funny joke!' Tony laughed at the idea of a 'mouse comedian' and let her go.",
+            "A few days later, because Tony was walking with his eyes closed out of laziness, he got tangled in a huge net set by hunters. Unable to escape, he roared like a car horn, and Rose heard him and rushed over. She said, 'Don't worry, my lion! I'll gnaw this net while telling you a hilarious joke!' While chewing the ropes, Rose joked, 'Why don't lions eat grass? Because they don't want to green-out!' Tony laughed so hard that he forgot his troubles, and was soon free. From that day on, Tony and Rose became the ultimate comedy duo!"
         )
     ),
     StoryModel(
@@ -126,12 +182,14 @@ val staticStoriesList = listOf(
         "🦊",
         "ማግኘት ያልቻልነውን ነገር መጥፎ ነው ማለት ቀላል ነው። (It's easy to dislike what you cannot get.)",
         listOf(
-            "አንዲት የተራበች ቀበሮ በአንድ አትክልት ስፍራ ውስጥ አለፈች። ከፍ ብሎ የተንጠለጠለ የበሰለ ጣፋጭ ወይን አየች። ወይኑን ለመውሰድ ደጋግማ ወደ ላይ ዘለለች፥ ነገር ግን ልትደርስበት አልቻለችም።",
-            "በመጨረሻም በጣም ስለደከማት፥ 'ይህ ወይን ኮምጣጣ ነው፥ አልፈልገውም!' ብላ ትታው ሄደች።"
+            "ፊፊ የምትባል በጣም ብልጥ፣ ቄንጠኛና ቀይ ጫማ ማድረግ የምትወድ ቀበሮ በጥልቁ ጫካ ውስጥ ትኖር ነበር። ፊፊ ሁልጊዜ በጫካው እንስሳት ፊት ራሷን እንደ ታላቅ የላቀ ዘላይ አድርጋ ታቀርብ ነበር። አንድ ቀን በጣም ተርባ ሳለች፥ በአንድ ትልቅ አትክልት ስፍራ ውስጥ እጅግ በጣም ረጅም በሆነ ዛፍ ላይ የተንጠለጠሉ በጣም ትላልቅና የሚያብረቀርቁ ወይኖችን አየች። 'እነዚህን ወይኖች በአንድ ዝላይ ብቻ ወስጄ በዓለም ላይ ካሉት ምግቦች ሁሉ የሚጣፍጠውን እበላለሁ!' ብላ ወሰነች።",
+            "ወዲያውኑ ፊፊ ቄንጠኛ ቀይ ጫማዎቿን አጥብቃ አስራ፥ ከሩቅ እየሮጠች 'ሁፕ!' ብላ ወደ ሰማይ ዘለለች። ነገር ግን ወይኑ በጣም ረጅም ስለነበር፥ ፊፊ በአየር ላይ ሆና በሁለት እጆቿ ወይኑን ለመያዝ ስትሞክር ሚዛኗን ስታ አንድ ትልቅና ጭቃ በበዛበት የውኃ ማጠራቀሚያ ገንዳ ውስጥ 'ፕላሽ!' ብላ ገባች። እንስሳቱ ሁሉ ይህንን አይተው በሳቅ መሬት ላይ ተንከባለሉ፤ ፊፊ ግን ፊቷን በቅጠል እየጠረገች 'ይህ እኮ የዳንሴ አካል ነው፤ ዝም ብዬ በጭቃ ለመታጠብ ፈልጌ ነው!' ብላ ዋሸች።",
+            "ፊፊ ተስፋ ሳትቆርጥ ለሁለተኛና ለሦስተኛ ጊዜ ደጋግማ ዘለለች፤ ነገር ግን በእያንዳንዱ ዝላይ ራሷን በቅርንጫፍ ላይ እየመታች በመጨረሻም መሬት ላይ በሆዷ ተንሸራተተች። በጣም ከመድከሟና ሆዷ በረሃብ መጮህ ከመጀመሩ የተነሳ፥ ወይኑን እያየች አፏን አጣመመችና 'ይህ ወይን እኮ በጣም ኮምጣጣና የበሰበሰ ነው! በዚያ ላይ ወይን መብላት ለቀበሮዎች ጥርስ በጣም መጥፎ ነው፤ እኔ ደግሞ ጤናማ ሳር መብላት እመርጣለሁ!' ብላ ሳሯን እያኘከች በኩራት ሄደች። እንስሳቱ ሁሉ በፊፊ ኩራትና ቀልድ እየሳቁ አጃቢ አደረጉላት።"
         ),
         listOf(
-            "A hungry fox walked into a vineyard. She spotted a bunch of ripe, sweet grapes hanging high on the vine. She jumped again and again to reach them, but couldn't get high enough.",
-            "Finally, exhausted and tired, she walked away saying, 'Those grapes are probably sour anyway, I don't need them!'"
+            "Fifi was a very clever, stylish red fox who loved wearing fancy red shoes. Fifi always bragged to the other forest animals about being a world-class high-jumper. One day, while very hungry, she saw huge, sparkling grapes hanging from a very tall vine in a beautiful garden. 'I will grab these grapes in a single jump and eat the most delicious meal in the world!' she decided.",
+            "Fifi tightened her red shoes, ran from a distance, and leaped high into the air with a loud 'Hoop!'. However, because the grapes were too high, Fifi lost her balance mid-air while trying to grab them and landed splash! into a large, muddy pool. All the watching animals rolled on the ground laughing, but Fifi, wiping her face with a leaf, lied, 'This was just part of my muddy dance routine!'",
+            "Fifi didn't give up and jumped a second and third time, but with each jump, she bumped into branches and slid flat on her belly. Exhausted and with her stomach growling, she made a sour face at the grapes and declared, 'These grapes are extremely sour and rotten anyway! Besides, eating grapes is terrible for a fox's teeth; I prefer healthy grass instead!' and walked away proudly chewing on a leaf. All the animals laughed at Fifi's proud excuses."
         )
     ),
     StoryModel(
@@ -141,14 +199,14 @@ val staticStoriesList = listOf(
         "🐰",
         "ጉልበት ሳይሆን ብልሃት ያሸንፋል። (Wisdom and intelligence triumph over brute force.)",
         listOf(
-            "በአንድ ጫካ ውስጥ አንድ ክፉ አንበሳ ነበር። በየቀኑ አንድ እንስሳ እንዲመጣለትና እንዲበላ ያደርግ ነበር። ተራው ለጥንቸሉ ደረሰ። ጥንቸሉ ሆን ብሎ ዘግይቶ ሄደ።",
-            "አንበሳው ሲቆጣ፥ ጥንቸሉ 'ጌታዬ፥ ሌላ አንበሳ መንገድ ላይ አግኝቶኝ ነው የዘገየሁት፥ እሱ ካንተ ይበልጣል ይላል!' አለው። አንበሳው ተቆጥቶ 'የት ነው ያለው? አሳየኝ!' አለ። ጥንቸሉ ወደ አንድ ጥልቅ የውኃ ጉድጓድ ወሰደው።",
-            "አንበሳው ጉድጓዱ ውስጥ የራሱን ጥላ አይቶ ሌላ አንበሳ መስሎት ዘሎ ገባና ጠፋ። የጫካው እንስሳት ሁሉ በሰላም ኖሩ።"
+            "በአንድ ጫካ ውስጥ ቦንጎ የሚባል እጅግ በጣም ክፉ፣ ቁጡና ምንም ቀልድ የማይወድ ትልቅ አንበሳ ይኖር ነበር። ቦንጎ ሁልጊዜ እንስሳቱን በኃይል እያስፈራራ በየቀኑ አንዱን እንስሳ ለእራት እንዲመጣለት ያዝዝ ነበር። እንስሳቱ በሙሉ በቦንጎ ቁጣና በየቀኑ በሚያሰማው ጩኸት እየተንቀጠቀጡ ይኖሩ ነበር። በአንድ ወቅት፥ ተራው በጣም ቀልደኛ、 ፈጣንና ትላልቅ ጆሮዎች ያሉት ፒተር ለሚባለው ጥንቸል ደረሰ። ፒተር ግን ለመሸበር ፈቃደኛ አልነበረም፤ ይልቁንም 'ዛሬ ለዚህ ቁጡ አንበሳ ጥሩ አስቂኝ ትምህርት እሰጠዋለሁ!' ብሎ አቀደ።",
+            "ፒተር ሆን ብሎ በጣም ዘግይቶ እራት ሰዓት ሲያልፍ መጣ። ቦንጎ በረሃብ ሆዱ እየጮኸና በጣም ተቆጥቶ 'አንተ ትንሿ ጥንቸል! ለምንድነው የዘገየኸው? ዛሬ በአንድ ጉሮሮ ነው የምውጥህ!' ብሎ ጮኸ። ፒተር ግን በረጋ መንፈስ ቆሞ 'ጌታዬ አንበሳ፥ እኔ እኮ በጊዜ እመጣ ነበር፤ ነገር ግን በመንገድ ላይ ሌላ በጣም ትልቅና በራሱ ላይ የወርቅ አክሊል ያደረገ አንበሳ አገኘሁኝ። እሱም 'እኔ የዚህ ጫካ እውነተኛ ንጉስና ምርጥ ዳንሰኛ ነኝ፤ ያ ቦንጎ የሚባለው ሰነፍ አንበሳ ምንም አይችልም' ብሎ ሰደበህ!' አለው።",
+            "ቦንጎ ይህንን ሲሰማ ጆሮዎቹን አቆመና 'ምን! በራሱ ላይ የወርቅ አክሊል ያደረገ ዝላይ አፍቃሪ አንበሳ? የት ነው ያለው? አሁኑኑ አሳየኝ!' እያለ በቁጣ ዘለለ። ፒተርም እየሳቀ ወደ አንድ ጥልቅና ንጹህ የውኃ ጉድጓድ ወሰደው። 'እዚህ ውስጥ ገብተህ እይ፥ እዚያው ተደብቆ ወርቁን እያጸዳ ነው!' አለው። ቦንጎ ወደ ጉድጓዱ ሲመለከት የራሱን የቁጣ ፊትና ጥላ አየ፤ ሌላኛው አንበሳ መስሎት 'ሄይ!' ብሎ ሲጮህ የራሱ ድምፅ በድምፅ ማሚቶ ተመልሶ መጣ። ቦንጎ በቁጣ 'አሁን አሳይሃለሁ!' ብሎ ወደ ጉድጓዱ ዘሎ ገባ። መውጣት አቅቶት በውኃው ውስጥ ሲንቦጫረቅ፥ ፒተር 'ንጉስ ቦንጎ ሆይ፥ በጉድጓዱ ውስጥ በደንብ ዋና ተለማመድ!' ብሎት እየሳቀ ወደ ጫካው ተመለሰ። እንስሳቱ በሙሉ በሰላምና በሳቅ ኖሩ።"
         ),
         listOf(
-            "In a forest, there lived a cruel lion. Every day, he forced the forest animals to send one of them to be his food. One day, it was the rabbit's turn. The rabbit intentionally delayed and arrived late.",
-            "When the lion roared in anger, the clever rabbit said, 'My Lord, another lion met me on the way and claimed he is greater than you!' The furious lion demanded to see him. The rabbit led him to a deep water well.",
-            "The lion looked down, saw his own reflection, and thought it was the rival. He leaped into the well to fight and drowned. The forest animals lived in peace ever after."
+            "In the deep forest, there lived a very cruel, short-tempered big lion named Bongo who hated jokes. Bongo always terrified the animals, demanding that one of them come to him each day for dinner. All the animals lived in constant fear of his roaring. One day, the turn came for a very funny, quick, long-eared rabbit named Peter. Peter refused to panic, thinking, 'Today, I will teach this grumpy lion a hilarious lesson!'",
+            "Peter intentionally arrived very late, long after dinnertime. Bongo, with a growling stomach and extreme anger, roared, 'You tiny rabbit! Why are you so late? I will swallow you in one gulp!' But Peter stood calmly and replied, 'My lord Bongo, I was coming on time, but on the way, I met another huge lion wearing a golden crown. He insulted you, saying: I am the real king and the best dancer of this forest, while Bongo is just a lazy amateur!'",
+            "Hearing this, Bongo raised his ears in fury, shouting, 'What! A crown-wearing, jumping lion? Where is he? Show me right now!' Peter giggled and led him to a deep, crystal-clear water well. 'Look inside, he is hiding there polishing his crown!' Bongo looked down, saw his own angry reflection, and when he roared 'Hey!', his voice echoed back. Thinking it was the rival mocking him, Bongo jumped straight into the well. As he splashed around unable to climb out, Peter waved, 'King Bongo, enjoy your swimming lessons!' and happily hopped away. All the animals lived in peace and laughter."
         )
     )
 )
@@ -405,50 +463,88 @@ fun SongsAndStoriesScreen(
                                 .padding(bottom = 16.dp)
                                 .testTag("global_music_box_card")
                         ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
                                 Row(
+                                    modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    modifier = Modifier.weight(1f)
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .background(
-                                                color = if (bgMusicEnabled) Color(currentMelody.colorHex) else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                                                shape = CircleShape
-                                            ),
-                                        contentAlignment = Alignment.Center
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        modifier = Modifier.weight(1f)
                                     ) {
-                                        Text(
-                                            text = if (bgMusicEnabled) currentMelody.emoji else "🔇",
-                                            fontSize = 24.sp
-                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .background(
+                                                    color = if (bgMusicEnabled) Color(currentMelody.colorHex) else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                                                    shape = CircleShape
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = if (bgMusicEnabled) currentMelody.emoji else "🔇",
+                                                fontSize = 24.sp
+                                            )
+                                        }
+                                        Column {
+                                            Text(
+                                                text = if (bgMusicEnabled) "Melody Playing: ${currentMelody.displayName}" else "Melody Paused",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp,
+                                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                                            )
+                                            Text(
+                                                text = if (bgMusicEnabled) "Sing along with the notes below!" else "Tap play on any song to hear its tune!",
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                                            )
+                                        }
                                     }
-                                    Column {
-                                        Text(
-                                            text = if (bgMusicEnabled) "Melody Playing: ${currentMelody.displayName}" else "Melody Paused",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 14.sp,
-                                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                                        )
-                                        Text(
-                                            text = if (bgMusicEnabled) "Sing along with the notes below!" else "Tap play on any song to hear its tune!",
-                                            fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
-                                        )
-                                    }
+
+                                    Switch(
+                                        checked = bgMusicEnabled,
+                                        onCheckedChange = { viewModel.toggleBgMusic() },
+                                        modifier = Modifier.testTag("global_music_switch")
+                                    )
                                 }
 
-                                Switch(
-                                    checked = bgMusicEnabled,
-                                    onCheckedChange = { viewModel.toggleBgMusic() },
-                                    modifier = Modifier.testTag("global_music_switch")
-                                )
+                                if (bgMusicEnabled) {
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.12f))
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    
+                                    val selectedInst by viewModel.selectedInstrument.collectAsState()
+                                    
+                                    Text(
+                                        text = "የሙዚቃ ዓይነት (Instrument Sound Style):",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                    
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .horizontalScroll(rememberScrollState())
+                                    ) {
+                                        InstrumentStyle.values().forEach { style ->
+                                            val isSel = selectedInst == style
+                                            FilterChip(
+                                                selected = isSel,
+                                                onClick = {
+                                                    viewModel.selectInstrument(style)
+                                                },
+                                                label = { Text(style.displayName, fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+                                                leadingIcon = { Text(style.emoji, fontSize = 12.sp) }
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -971,6 +1067,41 @@ fun SongDetailView(
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp
                     )
+                }
+
+                if (bgMusicEnabled) {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    val selectedInstrument by viewModel.selectedInstrument.collectAsState()
+
+                    Text(
+                        text = "የሙዚቃ ዓይነት (Choose Instrument Style):",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                    ) {
+                        InstrumentStyle.values().forEach { style ->
+                            val isSel = selectedInstrument == style
+                            FilterChip(
+                                selected = isSel,
+                                onClick = {
+                                    viewModel.selectInstrument(style)
+                                    viewModel.speak("Playing with ${style.displayName}", "Playing with ${style.displayName}")
+                                },
+                                label = { Text(style.displayName, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                                leadingIcon = { Text(style.emoji, fontSize = 14.sp) }
+                            )
+                        }
+                    }
                 }
             }
         }

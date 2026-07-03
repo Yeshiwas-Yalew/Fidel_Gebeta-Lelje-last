@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.sp
 import com.example.data.*
 import com.example.ui.FidelViewModel
 import com.example.ui.ChildSong
+import com.example.ui.InstrumentStyle
+import androidx.compose.foundation.horizontalScroll
 
 enum class LearnAppScreen {
     SPLASH_ONBOARDING,
@@ -168,6 +170,18 @@ fun MainAppContainer(viewModel: FidelViewModel) {
                                         imageVector = Icons.Default.EmojiEvents,
                                         contentDescription = "Sticker Album",
                                         tint = Color(0xFFFFD54F)
+                                    )
+                                }
+
+                                // Global Theme/Contrast Toggle for Accessibility
+                                IconButton(
+                                    onClick = { viewModel.toggleHighContrast() },
+                                    modifier = Modifier.testTag("global_theme_toggle_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Contrast,
+                                        contentDescription = "Toggle Contrast Theme",
+                                        tint = if (userProgress.highContrast) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                                     )
                                 }
 
@@ -315,396 +329,111 @@ fun MainAppContainer(viewModel: FidelViewModel) {
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             // Spot 1: Alphabet Fidel Board
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(98.dp)
-                                    .clickable {
-                                        viewModel.speak("Let's learn letters!", "Let's learn letters")
-                                        currentScreen = LearnAppScreen.LEARN_BOARD
-                                    }
-                                    .testTag("map_spot_learn"),
-                                shape = RoundedCornerShape(20.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFFFFB74D) // Kid friendly soft sun-colored orange
-                                )
+                            MapSpotCard(
+                                title = "Fidel Board ፊደል",
+                                subtitle = "Listen to pronunciation guides!",
+                                emoji = "📚",
+                                testTag = "map_spot_learn",
+                                defaultColor = Color(0xFFFFB74D),
+                                highContrast = userProgress.highContrast
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(52.dp)
-                                            .clip(CircleShape)
-                                            .background(Color.White),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text("📚", fontSize = 28.sp)
-                                    }
-
-                                    Spacer(modifier = Modifier.width(16.dp))
-
-                                    Column {
-                                        Text(
-                                            text = "Fidel Board ፊደል",
-                                            fontSize = 20.sp,
-                                            fontWeight = FontWeight.Black,
-                                            color = Color.White
-                                        )
-                                        Text(
-                                            text = "Listen to pronunciation guides!",
-                                            fontSize = 13.sp,
-                                            color = Color.White.copy(alpha = 0.85f)
-                                        )
-                                    }
-                                }
+                                viewModel.speak("Let's learn letters!", "Let's learn letters")
+                                currentScreen = LearnAppScreen.LEARN_BOARD
                             }
 
                             // Spot 2: Handwriting Arena
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(98.dp)
-                                    .clickable {
-                                        viewModel.speak("Time to practice writing!", "Time to practice writing")
-                                        currentScreen = LearnAppScreen.PRACTICE_DRAWING
-                                    }
-                                    .testTag("map_spot_practice"),
-                                shape = RoundedCornerShape(20.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFF64B5F6) // Kid friendly soft sky-blue
-                                )
+                            MapSpotCard(
+                                title = "Handwriting Arena",
+                                subtitle = "Trace characters to unlock stars!",
+                                emoji = "✏️",
+                                testTag = "map_spot_practice",
+                                defaultColor = Color(0xFF64B5F6),
+                                highContrast = userProgress.highContrast
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(52.dp)
-                                            .clip(CircleShape)
-                                            .background(Color.White),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text("✏️", fontSize = 28.sp)
-                                    }
-
-                                    Spacer(modifier = Modifier.width(16.dp))
-
-                                    Column {
-                                        Text(
-                                            text = "Handwriting Arena",
-                                            fontSize = 20.sp,
-                                            fontWeight = FontWeight.Black,
-                                            color = Color.White
-                                        )
-                                        Text(
-                                            text = "Trace characters to unlock stars!",
-                                            fontSize = 13.sp,
-                                            color = Color.White.copy(alpha = 0.85f)
-                                        )
-                                    }
-                                }
+                                viewModel.speak("Time to practice writing!", "Time to practice writing")
+                                currentScreen = LearnAppScreen.PRACTICE_DRAWING
                             }
 
                             // Spot 3: Quiz Arena
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(98.dp)
-                                    .clickable {
-                                        viewModel.speak("Play Quiz and get Gems!", "Play Quiz and get Gems")
-                                        currentScreen = LearnAppScreen.QUIZ_ARENA
-                                    }
-                                    .testTag("map_spot_quiz"),
-                                shape = RoundedCornerShape(20.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFF81C784) // Kid friendly leaf-green
-                                )
+                            MapSpotCard(
+                                title = "Fidel Master Quiz",
+                                subtitle = "Answer simple word quizzes!",
+                                emoji = "🎮",
+                                testTag = "map_spot_quiz",
+                                defaultColor = Color(0xFF81C784),
+                                highContrast = userProgress.highContrast
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(52.dp)
-                                            .clip(CircleShape)
-                                            .background(Color.White),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text("🎮", fontSize = 28.sp)
-                                    }
-
-                                    Spacer(modifier = Modifier.width(16.dp))
-
-                                    Column {
-                                        Text(
-                                            text = "Fidel Master Quiz",
-                                            fontSize = 20.sp,
-                                            fontWeight = FontWeight.Black,
-                                            color = Color.White
-                                        )
-                                        Text(
-                                            text = "Answer simple word quizzes!",
-                                            fontSize = 13.sp,
-                                            color = Color.White.copy(alpha = 0.85f)
-                                        )
-                                    }
-                                }
+                                viewModel.speak("Play Quiz and get Gems!", "Play Quiz and get Gems")
+                                currentScreen = LearnAppScreen.QUIZ_ARENA
                             }
 
                             // Spot 4: Complete Alphabet Reference Chart
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(98.dp)
-                                    .clickable {
-                                        viewModel.speak("Opening full alphabet reference guide", "Full Amharic Alphabet Chart!")
-                                        currentScreen = LearnAppScreen.ALPHABET_REFERENCE
-                                    }
-                                    .testTag("map_spot_reference"),
-                                shape = RoundedCornerShape(20.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFFAB47BC) // Kid friendly vibrant lavender/purple
-                                )
+                            MapSpotCard(
+                                title = "Interactive Dictionary ፊደላት",
+                                subtitle = "Pronunciation audio & stroke formation guides!",
+                                emoji = "🔤",
+                                testTag = "map_spot_reference",
+                                defaultColor = Color(0xFFAB47BC),
+                                highContrast = userProgress.highContrast
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(52.dp)
-                                            .clip(CircleShape)
-                                            .background(Color.White),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text("🔤", fontSize = 28.sp)
-                                    }
-
-                                    Spacer(modifier = Modifier.width(16.dp))
-
-                                    Column {
-                                        Text(
-                                            text = "Interactive Dictionary ፊደላት",
-                                            fontSize = 20.sp,
-                                            fontWeight = FontWeight.Black,
-                                            color = Color.White
-                                        )
-                                        Text(
-                                            text = "Pronunciation audio & stroke formation guides!",
-                                            fontSize = 13.sp,
-                                            color = Color.White.copy(alpha = 0.85f)
-                                        )
-                                    }
-                                }
+                                viewModel.speak("Opening full alphabet reference guide", "Full Amharic Alphabet Chart!")
+                                currentScreen = LearnAppScreen.ALPHABET_REFERENCE
                             }
 
                             // Spot 5: Amharic Sound Matching Game
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(98.dp)
-                                    .clickable {
-                                        viewModel.speak("Let's play the Sound Matching game and earn extra stars!", "Sound Match Game!")
-                                        currentScreen = LearnAppScreen.SOUND_MATCHING_GAME
-                                    }
-                                    .testTag("map_spot_sound_game"),
-                                shape = RoundedCornerShape(20.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFFF06292) // Playful strawberry pink
-                                )
+                            MapSpotCard(
+                                title = "Sound Match ድምፅ",
+                                subtitle = "Match Amharic audio sounds to earn extra stars!",
+                                emoji = "🎵",
+                                testTag = "map_spot_sound_game",
+                                defaultColor = Color(0xFFF06292),
+                                highContrast = userProgress.highContrast
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(52.dp)
-                                            .clip(CircleShape)
-                                            .background(Color.White),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text("🎵", fontSize = 28.sp)
-                                    }
-
-                                    Spacer(modifier = Modifier.width(16.dp))
-
-                                    Column {
-                                        Text(
-                                            text = "Sound Match ድምፅ",
-                                            fontSize = 20.sp,
-                                            fontWeight = FontWeight.Black,
-                                            color = Color.White
-                                        )
-                                        Text(
-                                            text = "Match Amharic audio sounds to earn extra stars!",
-                                            fontSize = 13.sp,
-                                            color = Color.White.copy(alpha = 0.85f)
-                                        )
-                                    }
-                                }
+                                viewModel.speak("Let's play the Sound Matching game and earn extra stars!", "Sound Match Game!")
+                                currentScreen = LearnAppScreen.SOUND_MATCHING_GAME
                             }
 
                             // Spot 6: Amharic Sentence Builder Game
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(108.dp)
-                                    .clickable {
-                                        viewModel.speak("Let's build Amharic sentences! Fun grammar puzzle!", "Sentence Builder Game!")
-                                        currentScreen = LearnAppScreen.SENTENCE_FORMATION
-                                    }
-                                    .testTag("map_spot_sentence_builder"),
-                                shape = RoundedCornerShape(20.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFF26A69A) // Professional cheerful teal
-                                )
-                             ) {
-                                  Row(
-                                      modifier = Modifier
-                                          .fillMaxSize()
-                                          .padding(16.dp),
-                                      verticalAlignment = Alignment.CenterVertically
-                                  ) {
-                                      Box(
-                                          modifier = Modifier
-                                              .size(52.dp)
-                                              .clip(CircleShape)
-                                              .background(Color.White),
-                                          contentAlignment = Alignment.Center
-                                      ) {
-                                          Text("🧩", fontSize = 28.sp)
-                                      }
+                            MapSpotCard(
+                                title = "Sentence Builder ዐረፍተ ነገር",
+                                subtitle = "Connect Amharic words into complete phrases and learn structure!",
+                                emoji = "🧩",
+                                testTag = "map_spot_sentence_builder",
+                                defaultColor = Color(0xFF26A69A),
+                                highContrast = userProgress.highContrast,
+                                minHeight = 108.dp
+                            ) {
+                                viewModel.speak("Let's build Amharic sentences! Fun grammar puzzle!", "Sentence Builder Game!")
+                                currentScreen = LearnAppScreen.SENTENCE_FORMATION
+                            }
 
-                                      Spacer(modifier = Modifier.width(16.dp))
+                            // Spot 7: Voice Practice Game
+                            MapSpotCard(
+                                title = "Voice Practice ድምፅ ልምምድ",
+                                subtitle = "Speak into the microphone to practice your Amharic letters and words!",
+                                emoji = "🎙️",
+                                testTag = "map_spot_voice_practice",
+                                defaultColor = Color(0xFF7E57C2),
+                                highContrast = userProgress.highContrast,
+                                minHeight = 108.dp
+                            ) {
+                                viewModel.speak("Let's practice Amharic pronunciation!", "Voice Practice!")
+                                currentScreen = LearnAppScreen.VOICE_PRACTICE
+                            }
 
-                                      Column {
-                                          Text(
-                                              text = "Sentence Builder ዐረፍተ ነገር",
-                                              fontSize = 18.sp,
-                                              fontWeight = FontWeight.Black,
-                                              color = Color.White
-                                          )
-                                          Text(
-                                              text = "Connect Amharic words into complete phrases and learn structure!",
-                                              fontSize = 12.sp,
-                                              color = Color.White.copy(alpha = 0.9f)
-                                          )
-                                      }
-                                  }
-                              }
-
-                             // Spot 7: Voice Practice Game
-                             Card(
-                                 modifier = Modifier
-                                     .fillMaxWidth()
-                                     .height(108.dp)
-                                     .clickable {
-                                         viewModel.speak("Let's practice Amharic pronunciation!", "Voice Practice!")
-                                         currentScreen = LearnAppScreen.VOICE_PRACTICE
-                                     }
-                                     .testTag("map_spot_voice_practice"),
-                                 shape = RoundedCornerShape(20.dp),
-                                 colors = CardDefaults.cardColors(
-                                     containerColor = Color(0xFF7E57C2) // Beautiful deep purple
-                                 )
-                              ) {
-                                  Row(
-                                      modifier = Modifier
-                                          .fillMaxSize()
-                                          .padding(16.dp),
-                                      verticalAlignment = Alignment.CenterVertically
-                                  ) {
-                                      Box(
-                                          modifier = Modifier
-                                              .size(52.dp)
-                                              .clip(CircleShape)
-                                              .background(Color.White),
-                                          contentAlignment = Alignment.Center
-                                      ) {
-                                          Text("🎙️", fontSize = 28.sp)
-                                      }
-
-                                      Spacer(modifier = Modifier.width(16.dp))
-
-                                      Column {
-                                          Text(
-                                              text = "Voice Practice ድምፅ ልምምድ",
-                                              fontSize = 18.sp,
-                                              fontWeight = FontWeight.Black,
-                                              color = Color.White
-                                          )
-                                          Text(
-                                              text = "Speak into the microphone to practice your Amharic letters and words!",
-                                              fontSize = 12.sp,
-                                              color = Color.White.copy(alpha = 0.9f)
-                                          )
-                                      }
-                                  }
-                              }
-
-                             // Spot 8: Amharic Songs & Stories
-                             Card(
-                                 modifier = Modifier
-                                     .fillMaxWidth()
-                                     .height(108.dp)
-                                     .clickable {
-                                         viewModel.speak("Let's sing Amharic songs and read stories!", "Songs and Stories!")
-                                         currentScreen = LearnAppScreen.AMHARIC_SONGS_STORIES
-                                     }
-                                     .testTag("map_spot_songs_stories"),
-                                 shape = RoundedCornerShape(20.dp),
-                                 colors = CardDefaults.cardColors(
-                                     containerColor = Color(0xFFFF7043) // Warm golden-orange
-                                 )
-                              ) {
-                                  Row(
-                                      modifier = Modifier
-                                          .fillMaxSize()
-                                          .padding(16.dp),
-                                      verticalAlignment = Alignment.CenterVertically
-                                  ) {
-                                      Box(
-                                          modifier = Modifier
-                                              .size(52.dp)
-                                              .clip(CircleShape)
-                                              .background(Color.White),
-                                          contentAlignment = Alignment.Center
-                                      ) {
-                                          Text("🎶", fontSize = 28.sp)
-                                      }
-
-                                      Spacer(modifier = Modifier.width(16.dp))
-
-                                      Column {
-                                          Text(
-                                              text = "Songs & Stories ዜማና ተረት",
-                                              fontSize = 18.sp,
-                                              fontWeight = FontWeight.Black,
-                                              color = Color.White
-                                          )
-                                          Text(
-                                              text = "Sing beautiful Amharic children's songs and read amazing moral tales!",
-                                              fontSize = 12.sp,
-                                              color = Color.White.copy(alpha = 0.9f)
-                                          )
-                                      }
-                                  }
-                              }
+                            // Spot 8: Amharic Songs & Stories
+                            MapSpotCard(
+                                title = "Songs & Stories ዜማና ተረት",
+                                subtitle = "Sing beautiful Amharic children's songs and read amazing moral tales!",
+                                emoji = "🎶",
+                                testTag = "map_spot_songs_stories",
+                                defaultColor = Color(0xFFFF7043),
+                                highContrast = userProgress.highContrast,
+                                minHeight = 108.dp
+                            ) {
+                                viewModel.speak("Let's sing Amharic songs and read stories!", "Songs and Stories!")
+                                currentScreen = LearnAppScreen.AMHARIC_SONGS_STORIES
+                            }
 
                         }
 
@@ -1198,6 +927,41 @@ fun MainAppContainer(viewModel: FidelViewModel) {
                                     }
                                 }
                             }
+
+                            val selectedInst by viewModel.selectedInstrument.collectAsState()
+                            
+                            Spacer(modifier = Modifier.height(16.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+                            Spacer(modifier = Modifier.height(14.dp))
+                            
+                            Text(
+                                text = "የሙዚቃ ዓይነት (Instrument Sound Style):",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState())
+                            ) {
+                                InstrumentStyle.values().forEach { style ->
+                                    val isSel = selectedInst == style
+                                    FilterChip(
+                                        selected = isSel,
+                                        onClick = {
+                                            viewModel.selectInstrument(style)
+                                            viewModel.speak("Selected ${style.displayName}", "Selected ${style.displayName}")
+                                        },
+                                        label = { Text(style.displayName, fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+                                        leadingIcon = { Text(style.emoji, fontSize = 12.sp) }
+                                    )
+                                }
+                            }
                         }
                     }
                 },
@@ -1211,3 +975,61 @@ fun MainAppContainer(viewModel: FidelViewModel) {
 fun Modifier.fillHorizontalPercent(percent: Float): Modifier = this.then(
     fillMaxWidth(percent)
 )
+
+@Composable
+fun MapSpotCard(
+    title: String,
+    subtitle: String,
+    emoji: String,
+    testTag: String,
+    defaultColor: Color,
+    highContrast: Boolean,
+    minHeight: androidx.compose.ui.unit.Dp = 98.dp,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = minHeight)
+            .clickable(onClick = onClick)
+            .testTag(testTag),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (highContrast) MaterialTheme.colorScheme.surface else defaultColor
+        ),
+        border = if (highContrast) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(if (highContrast) MaterialTheme.colorScheme.primaryContainer else Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(emoji, fontSize = 28.sp)
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column {
+                Text(
+                    text = title,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Black,
+                    color = if (highContrast) MaterialTheme.colorScheme.onSurface else Color.White
+                )
+                Text(
+                    text = subtitle,
+                    fontSize = 13.sp,
+                    color = if (highContrast) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f) else Color.White.copy(alpha = 0.85f)
+                )
+            }
+        }
+    }
+}
+

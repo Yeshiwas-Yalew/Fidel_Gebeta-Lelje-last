@@ -730,14 +730,8 @@ private fun startVoiceRecording(
     // Capture recorder handle and variables inside local thread context
     val mainScope = CoroutineScope(Dispatchers.Main)
     
-    val attributionContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        context.createAttributionContext("voice_practice")
-    } else {
-        context
-    }
-
     val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        MediaRecorder(attributionContext)
+        MediaRecorder(context)
     } else {
         @Suppress("DEPRECATION")
         MediaRecorder()

@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Amharic Learn</string>
+    <string name="empty_attribution_tag">""</string>
 </resources>
