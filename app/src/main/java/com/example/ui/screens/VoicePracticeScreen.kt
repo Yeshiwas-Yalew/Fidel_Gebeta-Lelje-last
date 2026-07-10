@@ -74,18 +74,21 @@ data class PracticeWord(
     val amharicGuidance: String
 )
 
-val practiceList = listOf(
-    PracticeWord("ሀ", "ha", "ሀልዮት", "Haliyot", "Idea", "💡", "በሉ፦ ሀ"),
-    PracticeWord("ለ", "la", "ላም", "Lam", "Cow", "🐄", "በሉ፦ ለ"),
-    PracticeWord("መ", "ma", "መኪና", "Mekina", "Car", "🚗", "በሉ፦ መ"),
-    PracticeWord("ረ", "ra", "ረግረግ", "Regreg", "Wetland", "🌾", "በሉ፦ ረ"),
-    PracticeWord("ሰ", "sa", "ሰማይ", "Semay", "Sky", "☁️", "በሉ፦ ሰ"),
-    PracticeWord("በ", "ba", "በግ", "Beg", "Sheep", "🐑", "በሉ፦ በ"),
-    PracticeWord("አ", "a", "አንበሳ", "Anbessa", "Lion", "🦁", "በሉ፦ አ"),
-    PracticeWord("ከ", "ka", "ከበሮ", "Kebero", "Drum", "🥁", "በሉ፦ ከ"),
-    PracticeWord("ወ", "wa", "ውሻ", "Wusha", "Dog", "🐶", "በሉ፦ ወ"),
-    PracticeWord("የ", "ya", "የማነ", "Yemane", "Right side", "👉", "በሉ፦ የ")
-)
+val practiceList: List<PracticeWord> by lazy {
+    FidelData.families.flatMap { family ->
+        family.letters.map { letter ->
+            PracticeWord(
+                character = letter.character,
+                phonetic = letter.phonetic,
+                word = if (letter.word.isNotEmpty()) letter.word else family.exampleWord,
+                translit = if (letter.translit.isNotEmpty()) letter.translit else family.exampleTranslit,
+                english = if (letter.english.isNotEmpty()) letter.english else family.exampleEnglish,
+                emoji = if (letter.emoji != "✨" && letter.emoji.isNotEmpty()) letter.emoji else family.exampleEmoji,
+                amharicGuidance = "በሉ፦ ${letter.character}"
+            )
+        }
+    }
+}
 
 // --- Simple Retrofit/OkHttp Client for direct Gemini REST call ---
 object GeminiRestEvaluator {
@@ -219,8 +222,34 @@ fun VoicePracticeScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+
+    // Generate full list of all 231 letters from FidelData
+    val fullPracticeList = remember { practiceList }
+
+    var selectedFamily by remember { mutableStateOf("All") } // "All" or family.mainConsonant
+    
+    val filteredPracticeList = remember(selectedFamily) {
+        if (selectedFamily == "All") {
+            fullPracticeList
+        } else {
+            fullPracticeList.filter { item ->
+                val family = FidelData.families.find { f -> f.letters.any { l -> l.character == item.character } }
+                family?.mainConsonant == selectedFamily
+            }
+        }
+    }
+
     var selectedIndex by remember { mutableStateOf(0) }
-    val activeItem = practiceList[selectedIndex]
+    
+    // Safety check to ensure selectedIndex is always valid for the filtered list
+    val activeItem = filteredPracticeList.getOrElse(selectedIndex) {
+        if (filteredPracticeList.isNotEmpty()) {
+            selectedIndex = 0
+            filteredPracticeList[0]
+        } else {
+            fullPracticeList[0] // fallback
+        }
+    }
 
     // Recording and state management
     var isRecording by remember { mutableStateOf(false) }
@@ -272,7 +301,12 @@ fun VoicePracticeScreen(
     // Trigger Amharic speech on load/change
     LaunchedEffect(selectedIndex) {
         evaluationResult = null
-        viewModel.speakAmharicLetterWeb(activeItem.character, activeItem.phonetic)
+        viewModel.speakAmharicLetterWeb(
+            character = activeItem.character,
+            fallbackPhonetic = activeItem.phonetic,
+            word = activeItem.word,
+            translit = activeItem.translit
+        )
     }
 
     Scaffold(
@@ -324,7 +358,21 @@ fun VoicePracticeScreen(
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Curated Letters/Words Selector Row
+                // Family Selector Header
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "የፊደል ቤተሰብ / Family Filter 📚",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                val familiesList = remember { listOf("All") + FidelData.families.map { it.mainConsonant } }
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -332,7 +380,55 @@ fun VoicePracticeScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(horizontal = 4.dp)
                 ) {
-                    itemsIndexed(practiceList) { index, item ->
+                    items(familiesList.size) { i ->
+                        val fam = familiesList[i]
+                        val isFamSelected = fam == selectedFamily
+                        FilterChip(
+                            selected = isFamSelected,
+                            onClick = {
+                                selectedFamily = fam
+                                selectedIndex = 0
+                            },
+                            label = {
+                                Text(
+                                    text = if (fam == "All") "✨ All 231 Letters" else "$fam Family",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                            ),
+                            modifier = Modifier.testTag("family_filter_chip_$fam")
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "ፊደላት / Active Letters (${filteredPracticeList.size}) 🗣️",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+
+                // Dynamic Letters/Words Selector Row
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp)
+                ) {
+                    itemsIndexed(filteredPracticeList) { index, item ->
                         val isSelected = index == selectedIndex
                         Surface(
                             shape = RoundedCornerShape(20.dp),
@@ -396,7 +492,12 @@ fun VoicePracticeScreen(
 
                             FilledIconButton(
                                 onClick = {
-                                    viewModel.speakAmharicLetterWeb(activeItem.character, activeItem.phonetic)
+                                    viewModel.speakAmharicLetterWeb(
+                                        character = activeItem.character,
+                                        fallbackPhonetic = activeItem.phonetic,
+                                        word = activeItem.word,
+                                        translit = activeItem.translit
+                                    )
                                 },
                                 modifier = Modifier.testTag("voice_listen_guidance_button")
                             ) {
@@ -425,7 +526,12 @@ fun VoicePracticeScreen(
                             Spacer(modifier = Modifier.width(16.dp))
                             FilledIconButton(
                                 onClick = {
-                                    viewModel.speakAmharicLetterWeb(activeItem.character, activeItem.phonetic)
+                                    viewModel.speakAmharicLetterWeb(
+                                        character = activeItem.character,
+                                        fallbackPhonetic = activeItem.phonetic,
+                                        word = activeItem.word,
+                                        translit = activeItem.translit
+                                    )
                                 },
                                 modifier = Modifier
                                     .size(56.dp)
@@ -458,19 +564,84 @@ fun VoicePracticeScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.fillMaxWidth()
+                        // Get Tutor details
+                        val (tutorEmoji, tutorName, tutorRole) = when (userProgress.teachingVoice) {
+                            "KID" -> Triple("👧", "Mimi (ሚሚ)", "Storyteller Mimi")
+                            "BABA", "CHUNI" -> Triple("👦", "Baba (ባባ)", "Storyteller Baba")
+                            "ELDER" -> Triple("👴", "Yeneta (የኔታ)", "Grandfather Yeneta")
+                            "TEACHER" -> Triple("👩", "Almaz (አልማዝ)", "Teacher Almaz")
+                            else -> Triple("👩‍🏫", "Aster (አስቴር)", "Tutor Aster")
+                        }
+
+                        val coachingText = when {
+                            isRecording -> "🎙️ \"Shh... I am listening closely! Say '${activeItem.character}' clearly!\""
+                            isAnalyzing -> "✨ \"Let me listen and analyze... Amharic is fun!\""
+                            evaluationResult != null -> {
+                                val res = evaluationResult!!
+                                if (res.score >= 75) {
+                                    "🎉 \"Sensational! Your pronunciation is outstanding! Keep it up!\""
+                                } else {
+                                    "💪 \"Good effort! Press the microphone below and let's try again!\""
+                                }
+                            }
+                            else -> "🗣️ \"Let's learn '${activeItem.character}' together! Tap the microphone below and repeat after me!\""
+                        }
+
+                        // Beautiful interactive Tutor Coaching Card
+                        Card(
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+                            ),
+                            border = BorderStroke(
+                                width = 1.5.dp,
+                                color = if (isRecording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp)
                         ) {
-                            Text(
-                                text = "🗣️ Click the listen button above, then practice shouting the letter clearly!",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(12.dp),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = tutorEmoji,
+                                        fontSize = 28.sp,
+                                        modifier = Modifier.align(Alignment.Center)
+                                    )
+                                    if (isRecording) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .border(2.dp, MaterialTheme.colorScheme.error, CircleShape)
+                                        )
+                                    }
+                                }
+                                Column {
+                                    Text(
+                                        text = "$tutorName (Your Coach)",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = coachingText,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -536,7 +707,20 @@ fun VoicePracticeScreen(
                                         audioFile,
                                         onRecordStarted = { isRecording = true },
                                         onTimerUpdate = { seconds -> recordingDurationSec = seconds },
-                                        onAmplitudeUpdate = { amp -> maxAmplitudeValue = amp }
+                                        onAmplitudeUpdate = { amp -> maxAmplitudeValue = amp },
+                                        onAutoStop = {
+                                            stopAndAnalyzeVoice(
+                                                audioFile,
+                                                activeItem,
+                                                viewModel,
+                                                onRecordStopped = { isRecording = false },
+                                                onAnalysisStarted = { isAnalyzing = true },
+                                                onAnalysisFinished = { res ->
+                                                    isAnalyzing = false
+                                                    evaluationResult = res
+                                                }
+                                            )
+                                        }
                                     )
                                 }
                             }
@@ -746,7 +930,8 @@ private fun startVoiceRecording(
     audioFile: File,
     onRecordStarted: () -> Unit,
     onTimerUpdate: (Int) -> Unit,
-    onAmplitudeUpdate: (Float) -> Unit
+    onAmplitudeUpdate: (Float) -> Unit,
+    onAutoStop: () -> Unit
 ) {
     if (audioFile.exists()) {
         audioFile.delete()
@@ -784,6 +969,7 @@ private fun startVoiceRecording(
             }
             // Automatically stop after 4 seconds
             Log.d("VoicePractice", "Auto stopping voice practice recording.")
+            onAutoStop()
         }
 
         // Real-time voice amplitude monitor

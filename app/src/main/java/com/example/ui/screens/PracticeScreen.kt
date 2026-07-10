@@ -1,7 +1,8 @@
 package com.example.ui.screens
 
 import android.media.AudioManager
-import android.media.ToneGenerator
+import android.media.AudioTrack
+import android.media.AudioFormat
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -28,6 +29,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -68,33 +70,284 @@ val AMHARIC_ENCOURAGEMENTS = listOf(
 )
 
 fun playHandwritingSuccessSound() {
-    try {
-        val toneG = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
-        // Run on background thread to play sequential celebration beeps
-        Thread {
-            try {
-                // Happy musical chord progression C -> E -> G -> Octave C
-                toneG.startTone(ToneGenerator.TONE_DTMF_1, 100) // Lower chime
-                Thread.sleep(120)
-                toneG.startTone(ToneGenerator.TONE_DTMF_5, 100) // Mid chime
-                Thread.sleep(120)
-                toneG.startTone(ToneGenerator.TONE_DTMF_9, 100) // High chime
-                Thread.sleep(120)
-                toneG.startTone(ToneGenerator.TONE_DTMF_0, 250) // Celebration ding!
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                try {
-                    Thread.sleep(1000)
-                    toneG.release()
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
+    Thread {
+        try {
+            val sampleRate = 22050
+            val minBufferSize = AudioTrack.getMinBufferSize(
+                sampleRate,
+                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.ENCODING_PCM_16BIT
+            )
+            val track = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                AudioTrack.Builder()
+                    .setAudioAttributes(
+                        android.media.AudioAttributes.Builder()
+                            .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build()
+                    )
+                    .setAudioFormat(
+                        AudioFormat.Builder()
+                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                            .setSampleRate(sampleRate)
+                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                            .build()
+                    )
+                    .setBufferSizeInBytes(minBufferSize.coerceAtLeast(2048))
+                    .setTransferMode(AudioTrack.MODE_STREAM)
+                    .build()
+            } else {
+                @Suppress("DEPRECATION")
+                AudioTrack(
+                    AudioManager.STREAM_MUSIC,
+                    sampleRate,
+                    AudioFormat.CHANNEL_OUT_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT,
+                    minBufferSize.coerceAtLeast(2048),
+                    AudioTrack.MODE_STREAM
+                )
             }
-        }.start()
-    } catch (e: Exception) {
-        e.printStackTrace()
+
+            track.play()
+
+            // Frequencies for C5 (523.25 Hz), E5 (659.25 Hz), G5 (783.99 Hz), C6 (1046.50 Hz)
+            val freqs = floatArrayOf(523.25f, 659.25f, 783.99f, 1046.50f)
+            val durationMs = 120
+            
+            for (i in freqs.indices) {
+                val freq = freqs[i]
+                val actualDuration = if (i == freqs.lastIndex) 250 else durationMs
+                val numSamples = (sampleRate * (actualDuration / 1000f)).toInt()
+                val pcm = ShortArray(numSamples)
+                for (j in 0 until numSamples) {
+                    val t = j.toDouble() / sampleRate
+                    // Linear decay envelope for a beautiful chime bell sound
+                    val envelope = 1.0 - (j.toDouble() / numSamples)
+                    val value = Math.sin(2.0 * Math.PI * freq * t) * envelope * 0.25 * 32767.0
+                    pcm[j] = value.toInt().toShort()
+                }
+                track.write(pcm, 0, pcm.size)
+                Thread.sleep(100)
+            }
+            
+            track.stop()
+            track.release()
+        } catch (e: Exception) {
+            android.util.Log.e("PracticeScreen", "Failed to play success chime: ${e.message}")
+        }
+    }.start()
+}
+
+/**
+ * Resolves sequential handwriting stroke coordinate sequences (absolute Offset) for any
+ * Amharic character by parsing its parent FidelFamily consonant structure and vowel order.
+ */
+fun getStrokePathsForLetter(character: String, family: FidelFamily, width: Float, height: Float): List<List<Offset>> {
+    val boxSize = Math.min(width, height) * 0.55f
+    val cx = width / 2f
+    val cy = height / 2f
+    val startX = cx - boxSize / 2f
+    val startY = cy - boxSize / 2f
+
+    fun toAbsolute(pctPoints: List<Pair<Float, Float>>): List<Offset> {
+        return pctPoints.map { (px, py) ->
+            Offset(startX + px * boxSize, startY + py * boxSize)
+        }
     }
+
+    val baseChar = family.mainConsonant
+    val baseStrokesPercent = when (baseChar) {
+        "ሀ" -> listOf(
+            listOf(0.25f to 0.15f, 0.25f to 0.85f),
+            listOf(0.25f to 0.15f, 0.75f to 0.15f),
+            listOf(0.75f to 0.15f, 0.75f to 0.85f)
+        )
+        "ለ" -> listOf(
+            listOf(0.5f to 0.15f, 0.25f to 0.85f),
+            listOf(0.38f to 0.5f, 0.75f to 0.85f)
+        )
+        "ሐ" -> listOf(
+            listOf(0.25f to 0.25f, 0.75f to 0.25f),
+            listOf(0.25f to 0.25f, 0.25f to 0.85f),
+            listOf(0.75f to 0.25f, 0.75f to 0.85f)
+        )
+        "መ" -> listOf(
+            listOf(0.35f to 0.35f, 0.2f to 0.5f, 0.35f to 0.65f, 0.5f to 0.5f, 0.35f to 0.35f),
+            listOf(0.5f to 0.5f, 0.65f to 0.35f, 0.8f to 0.5f, 0.65f to 0.65f, 0.5f to 0.5f)
+        )
+        "ሠ" -> listOf(
+            listOf(0.25f to 0.2f, 0.25f to 0.7f),
+            listOf(0.5f to 0.2f, 0.5f to 0.7f),
+            listOf(0.75f to 0.2f, 0.75f to 0.7f),
+            listOf(0.25f to 0.7f, 0.75f to 0.7f)
+        )
+        "ረ" -> listOf(
+            listOf(0.35f to 0.15f, 0.35f to 0.45f, 0.75f to 0.85f)
+        )
+        "ሰ" -> listOf(
+            listOf(0.3f to 0.8f, 0.3f to 0.2f),
+            listOf(0.3f to 0.2f, 0.7f to 0.2f),
+            listOf(0.7f to 0.2f, 0.7f to 0.8f)
+        )
+        "ሸ" -> listOf(
+            listOf(0.3f to 0.8f, 0.3f to 0.35f),
+            listOf(0.3f to 0.35f, 0.7f to 0.35f),
+            listOf(0.7f to 0.35f, 0.7f to 0.8f),
+            listOf(0.4f to 0.15f, 0.5f to 0.35f, 0.6f to 0.15f)
+        )
+        "ቀ" -> listOf(
+            listOf(0.5f to 0.45f, 0.3f to 0.25f, 0.5f to 0.15f, 0.7f to 0.25f, 0.5f to 0.45f),
+            listOf(0.5f to 0.45f, 0.5f to 0.85f)
+        )
+        "በ" -> listOf(
+            listOf(0.25f to 0.2f, 0.25f to 0.85f),
+            listOf(0.25f to 0.85f, 0.75f to 0.85f),
+            listOf(0.75f to 0.85f, 0.75f to 0.2f)
+        )
+        "ተ" -> listOf(
+            listOf(0.3f to 0.2f, 0.3f to 0.8f),
+            listOf(0.3f to 0.8f, 0.7f to 0.8f),
+            listOf(0.7f to 0.8f, 0.7f to 0.2f),
+            listOf(0.3f to 0.45f, 0.7f to 0.45f)
+        )
+        "ቸ" -> listOf(
+            listOf(0.3f to 0.3f, 0.3f to 0.8f),
+            listOf(0.3f to 0.8f, 0.7f to 0.8f),
+            listOf(0.7f to 0.8f, 0.7f to 0.3f),
+            listOf(0.3f to 0.5f, 0.7f to 0.5f),
+            listOf(0.45f to 0.15f, 0.5f to 0.3f, 0.55f to 0.15f)
+        )
+        "ኀ" -> listOf(
+            listOf(0.35f to 0.2f, 0.2f to 0.4f, 0.35f to 0.6f, 0.5f to 0.4f, 0.35f to 0.2f),
+            listOf(0.35f to 0.6f, 0.65f to 0.85f)
+        )
+        "ነ" -> listOf(
+            listOf(0.3f to 0.2f, 0.3f to 0.85f),
+            listOf(0.3f to 0.45f, 0.7f to 0.45f, 0.7f to 0.85f)
+        )
+        "ኘ" -> listOf(
+            listOf(0.3f to 0.3f, 0.3f to 0.85f),
+            listOf(0.3f to 0.5f, 0.7f to 0.5f, 0.7f to 0.85f),
+            listOf(0.45f to 0.15f, 0.5f to 0.3f, 0.55f to 0.15f)
+        )
+        "አ" -> listOf(
+            listOf(0.5f to 0.2f, 0.2f to 0.45f, 0.5f to 0.65f),
+            listOf(0.5f to 0.2f, 0.5f to 0.85f),
+            listOf(0.5f to 0.45f, 0.8f to 0.7f)
+        )
+        "ከ" -> listOf(
+            listOf(0.25f to 0.2f, 0.25f to 0.8f),
+            listOf(0.25f to 0.2f, 0.75f to 0.2f, 0.75f to 0.8f),
+            listOf(0.25f to 0.5f, 0.55f to 0.5f)
+        )
+        "ኸ" -> listOf(
+            listOf(0.25f to 0.3f, 0.25f to 0.8f),
+            listOf(0.25f to 0.3f, 0.75f to 0.3f, 0.75f to 0.8f),
+            listOf(0.25f to 0.55f, 0.55f to 0.55f),
+            listOf(0.45f to 0.15f, 0.5f to 0.3f, 0.55f to 0.15f)
+        )
+        "ወ" -> listOf(
+            listOf(0.3f to 0.35f, 0.2f to 0.15f, 0.4f to 0.15f, 0.3f to 0.35f),
+            listOf(0.7f to 0.35f, 0.6f to 0.15f, 0.8f to 0.15f, 0.7f to 0.35f),
+            listOf(0.5f to 0.35f, 0.5f to 0.85f)
+        )
+        "ዐ" -> listOf(
+            listOf(0.5f to 0.2f, 0.2f to 0.5f, 0.5f to 0.8f, 0.8f to 0.5f, 0.5f to 0.2f)
+        )
+        "ዘ" -> listOf(
+            listOf(0.3f to 0.25f, 0.3f to 0.55f),
+            listOf(0.3f to 0.55f, 0.7f to 0.55f),
+            listOf(0.7f to 0.55f, 0.7f to 0.85f)
+        )
+        "ዠ" -> listOf(
+            listOf(0.3f to 0.35f, 0.3f to 0.55f),
+            listOf(0.3f to 0.55f, 0.7f to 0.55f),
+            listOf(0.7f to 0.55f, 0.7f to 0.85f),
+            listOf(0.45f to 0.15f, 0.5f to 0.35f, 0.55f to 0.15f)
+        )
+        "የ" -> listOf(
+            listOf(0.25f to 0.25f, 0.45f to 0.55f, 0.5f to 0.85f),
+            listOf(0.75f to 0.25f, 0.55f to 0.55f, 0.5f to 0.85f)
+        )
+        "ደ" -> listOf(
+            listOf(0.3f to 0.2f, 0.3f to 0.8f),
+            listOf(0.3f to 0.5f, 0.7f to 0.5f, 0.7f to 0.8f)
+        )
+        "ጀ" -> listOf(
+            listOf(0.3f to 0.3f, 0.3f to 0.8f),
+            listOf(0.3f to 0.55f, 0.7f to 0.55f, 0.7f to 0.8f),
+            listOf(0.45f to 0.15f, 0.5f to 0.3f, 0.55f to 0.15f)
+        )
+        "ገ" -> listOf(
+            listOf(0.35f to 0.2f, 0.35f to 0.85f),
+            listOf(0.35f to 0.35f, 0.7f to 0.55f, 0.55f to 0.85f)
+        )
+        "ጠ" -> listOf(
+            listOf(0.3f to 0.25f, 0.7f to 0.25f),
+            listOf(0.5f to 0.25f, 0.25f to 0.55f, 0.5f to 0.85f, 0.75f to 0.55f, 0.5f to 0.25f)
+        )
+        "ጨ" -> listOf(
+            listOf(0.3f to 0.35f, 0.7f to 0.35f),
+            listOf(0.5f to 0.35f, 0.25f to 0.6f, 0.5f to 0.85f, 0.75f to 0.6f, 0.5f to 0.35f),
+            listOf(0.45f to 0.15f, 0.5f to 0.35f, 0.55f to 0.15f)
+        )
+        "ጰ" -> listOf(
+            listOf(0.5f to 0.2f, 0.5f to 0.85f),
+            listOf(0.5f to 0.45f, 0.25f to 0.65f, 0.5f to 0.8f, 0.75f to 0.65f, 0.5f to 0.45f)
+        )
+        "ጸ" -> listOf(
+            listOf(0.3f to 0.25f, 0.5f to 0.45f, 0.7f to 0.25f),
+            listOf(0.5f to 0.45f, 0.5f to 0.85f)
+        )
+        "ፀ" -> listOf(
+            listOf(0.5f to 0.25f, 0.25f to 0.55f, 0.5f to 0.8f, 0.75f to 0.55f, 0.5f to 0.25f),
+            listOf(0.25f to 0.55f, 0.75f to 0.55f)
+        )
+        "ፈ" -> listOf(
+            listOf(0.35f to 0.35f, 0.2f to 0.15f, 0.45f to 0.15f, 0.35f to 0.35f),
+            listOf(0.35f to 0.35f, 0.35f to 0.85f),
+            listOf(0.35f to 0.6f, 0.75f to 0.85f)
+        )
+        "ፐ" -> listOf(
+            listOf(0.25f to 0.2f, 0.25f to 0.85f),
+            listOf(0.75f to 0.2f, 0.75f to 0.85f),
+            listOf(0.25f to 0.45f, 0.75f to 0.45f)
+        )
+        else -> listOf( // Fallback
+            listOf(0.5f to 0.2f, 0.2f to 0.5f, 0.5f to 0.8f, 0.8f to 0.5f, 0.5f to 0.2f),
+            listOf(0.5f to 0.2f, 0.5f to 0.8f)
+        )
+    }
+
+    val finalStrokesPercent = baseStrokesPercent.toMutableList()
+
+    // Add extra order modifiers (1 to 7) based on vowel forms
+    val letterObj = family.letters.find { it.character == character }
+    val order = letterObj?.order ?: 1
+    if (order > 1) {
+        when (order) {
+            2 -> { // Ka'ib: middle-right horizontal tick
+                finalStrokesPercent.add(listOf(0.6f to 0.5f, 0.85f to 0.5f))
+            }
+            3 -> { // Salis: bottom-right foot hanger
+                finalStrokesPercent.add(listOf(0.75f to 0.8f, 0.85f to 0.95f))
+            }
+            4 -> { // Rabi': modified / loop right leg
+                finalStrokesPercent.add(listOf(0.75f to 0.5f, 0.9f to 0.75f))
+            }
+            5 -> { // Hamis: loop/extension on the right foot
+                finalStrokesPercent.add(listOf(0.75f to 0.8f, 0.82f to 0.92f, 0.9f to 0.8f))
+            }
+            6 -> { // Sadis: small tick on the left side / bottom
+                finalStrokesPercent.add(listOf(0.25f to 0.6f, 0.15f to 0.55f))
+            }
+            7 -> { // Sab'i: small circle/tick on the top/left
+                finalStrokesPercent.add(listOf(0.25f to 0.15f, 0.35f to 0.2f, 0.25f to 0.25f, 0.15f to 0.2f, 0.25f to 0.15f))
+            }
+        }
+    }
+
+    return finalStrokesPercent.map { toAbsolute(it) }
 }
 
 
@@ -189,6 +442,84 @@ fun PracticeScreen(
                 sparkles.addAll(updated)
             }
         }
+    }
+
+    // Interactive stroke demonstration states
+    var isPlayingDemo by remember { mutableStateOf(false) }
+    var demoPointOffset by remember { mutableStateOf<Offset?>(null) }
+    val demoTracedPaths = remember { mutableStateListOf<List<Offset>>() }
+
+    // Coroutine managing the sequential tracing animation
+    LaunchedEffect(activeLetter, isPlayingDemo) {
+        if (isPlayingDemo && arenaWidth > 0f && arenaHeight > 0f) {
+            demoTracedPaths.clear()
+            demoPointOffset = null
+            
+            // Allow a tiny delay for layout stabilization
+            delay(100)
+            val strokes = getStrokePathsForLetter(activeLetter, activeFamily, arenaWidth, arenaHeight)
+            
+            for (stroke in strokes) {
+                if (stroke.isEmpty()) continue
+                if (!isPlayingDemo) break
+                
+                val currentStrokePoints = mutableStateListOf<Offset>()
+                demoTracedPaths.add(currentStrokePoints)
+                
+                // Trace through the points in this stroke sequence
+                for (i in 0 until stroke.size - 1) {
+                    val start = stroke[i]
+                    val end = stroke[i + 1]
+                    val segmentSteps = 10
+                    for (step in 0..segmentSteps) {
+                        if (!isPlayingDemo) break
+                        val t = step.toFloat() / segmentSteps
+                        val currentPos = Offset(
+                            x = start.x + (end.x - start.x) * t,
+                            y = start.y + (end.y - start.y) * t
+                        )
+                        demoPointOffset = currentPos
+                        currentStrokePoints.add(currentPos)
+                        
+                        // Add magical trail sparkles following the demo pointer
+                        repeat(1) {
+                            sparkles.add(
+                                TrailSparkle(
+                                    x = currentPos.x,
+                                    y = currentPos.y,
+                                    color = when (selectedTrailStyle) {
+                                        TrailStyle.RAINBOW -> Color(0xFFFFD700) // Golden sparkles
+                                        TrailStyle.NEON -> Color(0xFF00E5FF) // Cyber neon cyan
+                                        TrailStyle.HEATMAP -> Color(0xFF4CAF50) // Emerald green
+                                    },
+                                    size = (8..15).random().toFloat(),
+                                    alpha = 1.0f,
+                                    dx = ((-150..150).random() / 100f),
+                                    dy = ((-150..150).random() / 100f)
+                                )
+                            )
+                        }
+                        delay(20)
+                    }
+                }
+                // Small breather between strokes to show stroke order clearly
+                delay(200)
+            }
+            demoPointOffset = null
+            // Hold the completed form for a moment
+            delay(600)
+            isPlayingDemo = false
+            demoTracedPaths.clear()
+        }
+    }
+
+    // Auto-play the stroke demonstration on letter changes so children see correct stroke order first
+    LaunchedEffect(activeLetter) {
+        points.clear()
+        completeMessage = ""
+        starRewardText = ""
+        // Auto-play!
+        isPlayingDemo = true
     }
 
     Scaffold(
@@ -533,42 +864,39 @@ fun PracticeScreen(
                 }
             }
 
-            val liveAccuracyPercent = remember(points.size, arenaWidth, arenaHeight) {
+            val liveAccuracyPercent = remember(points.size, activeLetter, activeFamily, arenaWidth, arenaHeight) {
                 if (points.isEmpty()) {
                     100
                 } else {
-                    val cx = arenaWidth / 2f
-                    val cy = arenaHeight / 2f
-                    var totalScore = 0f
-                    
-                    points.forEach { p ->
-                        val dx = p.x - cx
-                        val dy = p.y - cy
-                        val dist = Math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
+                    val strokes = getStrokePathsForLetter(activeLetter, activeFamily, arenaWidth, arenaHeight)
+                    val guidePoints = strokes.flatten()
+                    if (guidePoints.isEmpty()) {
+                        100
+                    } else {
+                        var totalScore = 0f
+                        val sampledPoints = if (points.size > 150) {
+                            points.filterIndexed { idx, _ -> idx % (points.size / 75) == 0 }
+                        } else {
+                            points
+                        }
                         
-                        val idealOuterRadius = cx * 0.72f
-                        val idealInnerRadius = cx * 0.15f
-                        
-                        val score = when {
-                            dist in idealInnerRadius..idealOuterRadius -> 100f
-                            dist < idealInnerRadius -> {
-                                val ratio = dist / idealInnerRadius
-                                60f + (ratio * 40f)
-                            }
-                            else -> {
-                                val outerLimit = cx * 1.15f
-                                if (dist > outerLimit) {
-                                    40f
-                                } else {
-                                    val ratio = (dist - idealOuterRadius) / (outerLimit - idealOuterRadius)
-                                    100f - (ratio * 60f)
+                        sampledPoints.forEach { p ->
+                            var minDistSq = Float.MAX_VALUE
+                            guidePoints.forEach { g ->
+                                val dx = p.x - g.x
+                                val dy = p.y - g.y
+                                val distSq = dx * dx + dy * dy
+                                if (distSq < minDistSq) {
+                                    minDistSq = distSq
                                 }
                             }
+                            val dist = Math.sqrt(minDistSq.toDouble()).toFloat()
+                            val score = (100f * (1f - (dist / 140f))).coerceIn(30f, 100f)
+                            totalScore += score
                         }
-                        totalScore += score
+                        val avg = totalScore / sampledPoints.size
+                        avg.toInt()
                     }
-                    val avg = totalScore / points.size
-                    Math.min(100, Math.max(30, avg.toInt()))
                 }
             }
 
@@ -582,6 +910,38 @@ fun PracticeScreen(
                 color = MaterialTheme.colorScheme.secondary,
                 textAlign = TextAlign.Center
             )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Replay / Watch Stroke Guide button
+            Button(
+                onClick = {
+                    isPlayingDemo = false
+                    points.clear()
+                    completeMessage = ""
+                    starRewardText = ""
+                    viewModel.speak("እንዴት እንደሚጻፍ ይመልከቱ", "Let's see how to write it")
+                    isPlayingDemo = true
+                },
+                modifier = Modifier
+                    .testTag("play_stroke_demo_button")
+                    .padding(vertical = 2.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.onTertiary
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("እንዴት እንደሚጻፍ ይመልከቱ 🪄 (Watch Guide)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
 
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -697,6 +1057,11 @@ fun PracticeScreen(
                     }
                     .pointerInput(Unit) {
                         detectDragGestures { change, dragAmount ->
+                            if (isPlayingDemo) {
+                                isPlayingDemo = false
+                                demoPointOffset = null
+                                demoTracedPaths.clear()
+                            }
                             change.consume()
                             val pos = change.position
                             points.add(pos)
@@ -733,7 +1098,7 @@ fun PracticeScreen(
                     text = activeLetter,
                     fontSize = 180.sp,
                     fontWeight = FontWeight.Black,
-                    color = Color.LightGray.copy(alpha = 0.4f),
+                    color = Color.LightGray.copy(alpha = 0.12f),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -744,6 +1109,39 @@ fun PracticeScreen(
                     val canvasHeight = size.height
                     val centerX = canvasWidth / 2f
                     val centerY = canvasHeight / 2f
+
+                    // 1. Draw static thick gray skeleton guide paths for the current letter
+                    val strokes = getStrokePathsForLetter(activeLetter, activeFamily, canvasWidth, canvasHeight)
+                    strokes.forEach { strokePoints ->
+                        if (strokePoints.size > 1) {
+                            val strokePath = Path().apply {
+                                moveTo(strokePoints[0].x, strokePoints[0].y)
+                                for (i in 1 until strokePoints.size) {
+                                    lineTo(strokePoints[i].x, strokePoints[i].y)
+                                }
+                            }
+                            // Thick soft gray brush guide
+                            drawPath(
+                                path = strokePath,
+                                color = Color.LightGray.copy(alpha = 0.65f),
+                                style = Stroke(
+                                    width = 24.dp.toPx(),
+                                    cap = StrokeCap.Round,
+                                    join = StrokeJoin.Round
+                                )
+                            )
+                            // Elegant thin white centerline for precision child guidance
+                            drawPath(
+                                path = strokePath,
+                                color = Color.White.copy(alpha = 0.75f),
+                                style = Stroke(
+                                    width = 2.dp.toPx(),
+                                    cap = StrokeCap.Round,
+                                    join = StrokeJoin.Round
+                                )
+                            )
+                        }
+                    }
 
                     if (points.size > 1) {
                         when (selectedTrailStyle) {
@@ -852,6 +1250,52 @@ fun PracticeScreen(
                             radius = 6.dp.toPx(),
                             center = lastPoint
                         )
+                    }
+
+                    // Render interactive stroke guide animation if active
+                    if (isPlayingDemo) {
+                        demoTracedPaths.forEach { strokePoints ->
+                            if (strokePoints.size > 1) {
+                                val path = Path().apply {
+                                    moveTo(strokePoints[0].x, strokePoints[0].y)
+                                    for (i in 1 until strokePoints.size) {
+                                        lineTo(strokePoints[i].x, strokePoints[i].y)
+                                    }
+                                }
+                                // Thick golden ambient glow
+                                drawPath(
+                                    path = path,
+                                    color = Color(0x33FFD700), // Glowing Gold
+                                    style = Stroke(
+                                        width = 24.dp.toPx(),
+                                        cap = StrokeCap.Round
+                                    )
+                                )
+                                // Precision golden line
+                                drawPath(
+                                    path = path,
+                                    color = Color(0xFFFFD700), // Bright Gold
+                                    style = Stroke(
+                                        width = 8.dp.toPx(),
+                                        cap = StrokeCap.Round
+                                    )
+                                )
+                            }
+                        }
+
+                        // Pulsating magic cursor tip representing a golden pencil/brush
+                        demoPointOffset?.let { tip ->
+                            drawCircle(
+                                color = Color(0x66FFD700),
+                                radius = 22.dp.toPx(),
+                                center = tip
+                            )
+                            drawCircle(
+                                color = Color.White,
+                                radius = 8.dp.toPx(),
+                                center = tip
+                            )
+                        }
                     }
                 }
 

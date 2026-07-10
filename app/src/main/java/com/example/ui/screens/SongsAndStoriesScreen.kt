@@ -1191,6 +1191,17 @@ fun StoryDetailView(
     onTitleClick: () -> Unit,
     onClose: () -> Unit
 ) {
+    val userProgress by viewModel.userProgress.collectAsState()
+    val isStoryPlaying by viewModel.isStoryPlayingFlow.collectAsState()
+
+    val (tutorEmoji, tutorName, tutorRole) = when (userProgress.teachingVoice) {
+        "KID" -> Triple("👧", "Mimi (ሚሚ)", "Storyteller Mimi")
+        "BABA", "CHUNI" -> Triple("👦", "Baba (ባባ)", "Storyteller Baba")
+        "ELDER" -> Triple("👴", "Yeneta (የኔታ)", "Grandfather Yeneta")
+        "TEACHER" -> Triple("👩", "Almaz (አልማዝ)", "Teacher Almaz")
+        else -> Triple("👩‍🏫", "Aster (አስቴር)", "Tutor Aster")
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1215,6 +1226,79 @@ fun StoryDetailView(
         }
 
         Spacer(modifier = Modifier.height(12.dp))
+
+        // Amharic Instructor Storytelling Panel
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.25f)
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+                .border(
+                    width = 1.5.dp,
+                    color = if (isStoryPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(20.dp)
+                )
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Instructor Avatar with animated sound waves if playing
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = tutorEmoji,
+                        fontSize = 32.sp,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                    if (isStoryPlaying) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        )
+                    }
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "$tutorName is telling this story!",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (isStoryPlaying) "🎙️ Reading paragraph ${activeParagraphIndex?.let { it + 1 } ?: 1}..." else "📖 Tap 'Play' or any paragraph below to listen!",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isStoryPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                    )
+                }
+
+                FilledIconButton(
+                    onClick = { onTitleClick() },
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = if (isStoryPlaying) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                    ),
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isStoryPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
+                        contentDescription = if (isStoryPlaying) "Stop Story" else "Play Story"
+                    )
+                }
+            }
+        }
 
         // Big Story Display header Card
         Card(
@@ -1262,16 +1346,16 @@ fun StoryDetailView(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.PlayArrow,
+                            imageVector = if (isStoryPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = if (isStoryPlaying) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = "ሙሉውን ለማድመጥ ይጫኑ / Tap to listen to the whole story!",
+                            text = if (isStoryPlaying) "ታሪኩን ለማቆም ይጫኑ / Tap to STOP reading!" else "ሙሉውን ለማድመጥ ይጫኑ / Tap to listen to the whole story!",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = if (isStoryPlaying) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                         )
                     }
                 }

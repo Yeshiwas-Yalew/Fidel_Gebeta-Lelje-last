@@ -16,6 +16,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.isActive
+import kotlin.coroutines.suspendCoroutine
+import kotlin.coroutines.resume
 import java.io.File
 import java.util.Locale
 import okhttp3.OkHttpClient
@@ -254,6 +256,7 @@ class FidelViewModel(application: Application) : AndroidViewModel(application), 
             Log.e("FidelViewModel", "Failed to init TTS: ${e.message}")
         }
         startSessionTracking()
+        updateCachedLettersCount()
         
         // Auto-start background music loop on launch if enabled
         if (_bgMusicEnabled.value) {
@@ -564,19 +567,18 @@ class FidelViewModel(application: Application) : AndroidViewModel(application), 
     }
 
     private fun getAudioContext(): android.content.Context {
-        return if (android.os.Build.VERSION.SDK_INT >= 30) {
-            try {
-                mediaContext.createAttributionContext("audioPlayback")
-            } catch (e: Exception) {
-                mediaContext
-            }
-        } else {
-            mediaContext
-        }
+        return mediaContext
     }
 
     var storyMediaPlayer: android.media.MediaPlayer? = null
+    private val _isStoryPlaying = MutableStateFlow(false)
+    val isStoryPlayingFlow: StateFlow<Boolean> = _isStoryPlaying.asStateFlow()
+
     var isStoryPlaying = false
+        set(value) {
+            field = value
+            _isStoryPlaying.value = value
+        }
     var currentStoryParagraphIndex = 0
 
     fun stopStorySpeech() {
@@ -601,7 +603,7 @@ class FidelViewModel(application: Application) : AndroidViewModel(application), 
         }
     }
 
-    private fun fetchGeminiTtsAudio(text: String, voiceName: String, voiceDescription: String, callback: (File?) -> Unit) {
+    private fun fetchGeminiTtsAudio(text: String, voiceName: String, voiceDescription: String, isStory: Boolean = false, callback: (File?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val apiKey = BuildConfig.GEMINI_API_KEY
@@ -611,7 +613,23 @@ class FidelViewModel(application: Application) : AndroidViewModel(application), 
                 }
 
                 // Construct prompt to read clearly as native
-                val prompt = "Pronounce this Amharic text extremely clearly, with a perfect, native Amharic accent, phrasing, and emotional feeling, configured as a speech tool for teaching students. Speak $voiceDescription. Read only this Amharic text, do not translate, do not add anything else: $text"
+                val isAmharic = text.any { it.code in 0x1200..0x137F }
+                val prompt = if (isAmharic) {
+                    if (isStory) {
+                        "You are a professional, highly expressive native Amharic voice actor and storyteller reading a children's storybook ('ተረት'). " +
+                        "Read the following Amharic text with extreme warmth, deep emotional feeling, appropriate dramatic expressions (e.g., excitement, surprise, joy, or curiosity), " +
+                        "and a perfect, flawless native Amharic accent and pronunciation. Absolutely zero English, foreign, or robotic accent. " +
+                        "Speak $voiceDescription. Read slowly and beautifully. " +
+                        "Read ONLY the following Amharic text exactly as written, do not translate, do not add any English introductions, remarks, or explanations: $text"
+                    } else {
+                        "Pronounce this Amharic text extremely clearly, with a perfect, native Amharic accent and pronunciation, phrasing, and emotional feeling, configured as a speech tool for teaching students. " +
+                        "Absolutely zero English, foreign, or robotic accent. " +
+                        "Speak $voiceDescription. Read only this Amharic text, do not translate, do not add anything else: $text"
+                    }
+                } else {
+                    "You are a friendly, patient, and highly professional native Amharic teacher/tutor teaching Amharic to kids. " +
+                    "Speak $voiceDescription. Read the following English instructional/encouragement text clearly, warmly, and beautifully: $text"
+                }
 
                 val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=$apiKey"
 
@@ -761,8 +779,10 @@ class FidelViewModel(application: Application) : AndroidViewModel(application), 
     private fun playFallbackGeneralAudio(text: String, phoneticAlternative: String) {
          viewModelScope.launch(Dispatchers.Main) {
              try {
+                 val isAmharic = text.any { it.code in 0x1200..0x137F }
+                 val lang = if (isAmharic) "am" else "en"
                  val encoded = java.net.URLEncoder.encode(text, "UTF-8")
-                 val url = "https://translate.google.com/translate_tts?ie=UTF-8&tl=am&client=tw-ob&q=$encoded"
+                 val url = "https://translate.google.com/translate_tts?ie=UTF-8&tl=$lang&client=tw-ob&q=$encoded"
 
                  android.media.MediaPlayer().apply {
                      setAudioAttributes(
@@ -791,6 +811,11 @@ class FidelViewModel(application: Application) : AndroidViewModel(application), 
     }
 
     fun speakStory(paragraphs: List<String>, onParagraphActive: (Int?) -> Unit) {
+        if (isStoryPlaying) {
+            stopStorySpeech()
+            onParagraphActive(null)
+            return
+        }
         stopStorySpeech()
         if (paragraphs.isEmpty()) {
             onParagraphActive(null)
@@ -816,90 +841,16 @@ class FidelViewModel(application: Application) : AndroidViewModel(application), 
                 return
             }
 
-            if (text.any { it.code in 0x1200..0x137F }) {
-                val (voiceName, voiceDesc) = getGeminiVoiceSettings()
-                fetchGeminiTtsAudio(text, voiceName, voiceDesc) { tempFile ->
-                    if (tempFile != null) {
-                        viewModelScope.launch(Dispatchers.Main) {
-                            try {
-                                if (!isStoryPlaying) {
-                                    try { tempFile.delete() } catch (e: Exception) {}
-                                    return@launch
-                                }
-                                storyMediaPlayer = android.media.MediaPlayer().apply {
-                                    setAudioAttributes(
-                                        android.media.AudioAttributes.Builder()
-                                            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
-                                            .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
-                                            .build()
-                                    )
-                                    setDataSource(getAudioContext(), android.net.Uri.fromFile(tempFile))
-                                    prepareAsync()
-                                    setOnPreparedListener {
-                                        applyVoiceParams()
-                                        start()
-                                    }
-                                    setOnErrorListener { mp, _, _ ->
-                                        speakLocalFallback(text)
-                                        mp.release()
-                                        try { tempFile.delete() } catch (e: Exception) {}
-                                        viewModelScope.launch {
-                                            delay(4000)
-                                            if (isStoryPlaying) {
-                                                currentStoryParagraphIndex++
-                                                playNext()
-                                            }
-                                        }
-                                        true
-                                    }
-                                    setOnCompletionListener { mp ->
-                                        mp.release()
-                                        storyMediaPlayer = null
-                                        try { tempFile.delete() } catch (e: Exception) {}
-                                        if (isStoryPlaying) {
-                                            currentStoryParagraphIndex++
-                                            playNext()
-                                        }
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                try { tempFile.delete() } catch (e2: Exception) {}
-                                playFallbackStoryAudio(text, ::playNext)
-                            }
-                        }
-                    } else {
-                        playFallbackStoryAudio(text, ::playNext)
-                    }
-                }
-            } else {
-                speakLocalFallback(text)
-                viewModelScope.launch {
-                    delay(4000)
-                    if (isStoryPlaying) {
-                        currentStoryParagraphIndex++
-                        playNext()
-                    }
-                }
-            }
-        }
-
-        playNext()
-    }
-
-    fun speak(text: String, phoneticAlternative: String) {
-        if (text != "Difficulty mode updated" && !text.startsWith("ሰላም") && !text.startsWith("የአማርኛ")) {
-            stopStorySpeech()
-        }
-        if (!userProgress.value.textToSpeechEnabled) return
-
-        // If the text contains any Amharic characters, play it using the perfect web Amharic TTS!
-        if (text.any { it.code in 0x1200..0x137F }) {
             val (voiceName, voiceDesc) = getGeminiVoiceSettings()
-            fetchGeminiTtsAudio(text, voiceName, voiceDesc) { tempFile ->
+            fetchGeminiTtsAudio(text, voiceName, voiceDesc, isStory = true) { tempFile ->
                 if (tempFile != null) {
                     viewModelScope.launch(Dispatchers.Main) {
                         try {
-                            android.media.MediaPlayer().apply {
+                            if (!isStoryPlaying) {
+                                try { tempFile.delete() } catch (e: Exception) {}
+                                return@launch
+                            }
+                            storyMediaPlayer = android.media.MediaPlayer().apply {
                                 setAudioAttributes(
                                     android.media.AudioAttributes.Builder()
                                         .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
@@ -913,27 +864,87 @@ class FidelViewModel(application: Application) : AndroidViewModel(application), 
                                     start()
                                 }
                                 setOnErrorListener { mp, _, _ ->
-                                    speakLocalFallback(phoneticAlternative)
+                                    speakLocalFallback(text)
                                     mp.release()
                                     try { tempFile.delete() } catch (e: Exception) {}
+                                    viewModelScope.launch {
+                                        delay(4000)
+                                        if (isStoryPlaying) {
+                                            currentStoryParagraphIndex++
+                                            playNext()
+                                        }
+                                    }
                                     true
                                 }
                                 setOnCompletionListener { mp ->
                                     mp.release()
+                                    storyMediaPlayer = null
                                     try { tempFile.delete() } catch (e: Exception) {}
+                                    if (isStoryPlaying) {
+                                        currentStoryParagraphIndex++
+                                        playNext()
+                                    }
                                 }
                             }
                         } catch (e: Exception) {
                             try { tempFile.delete() } catch (e2: Exception) {}
-                            playFallbackGeneralAudio(text, phoneticAlternative)
+                            playFallbackStoryAudio(text, ::playNext)
                         }
                     }
                 } else {
-                    playFallbackGeneralAudio(text, phoneticAlternative)
+                    playFallbackStoryAudio(text, ::playNext)
                 }
             }
-        } else {
-            speakLocalFallback(phoneticAlternative)
+        }
+
+        playNext()
+    }
+
+    fun speak(text: String, phoneticAlternative: String) {
+        if (text != "Difficulty mode updated" && !text.startsWith("ሰላም") && !text.startsWith("የአማርኛ")) {
+            stopStorySpeech()
+        }
+        if (!userProgress.value.textToSpeechEnabled) return
+
+        // Play everything using the perfect web Amharic TTS (Gemini)!
+        val (voiceName, voiceDesc) = getGeminiVoiceSettings()
+        val isStory = text.length > 30
+        fetchGeminiTtsAudio(text, voiceName, voiceDesc, isStory = isStory) { tempFile ->
+            if (tempFile != null) {
+                viewModelScope.launch(Dispatchers.Main) {
+                    try {
+                        android.media.MediaPlayer().apply {
+                            setAudioAttributes(
+                                android.media.AudioAttributes.Builder()
+                                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                                    .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                                    .build()
+                            )
+                            setDataSource(getAudioContext(), android.net.Uri.fromFile(tempFile))
+                            prepareAsync()
+                            setOnPreparedListener {
+                                applyVoiceParams()
+                                start()
+                            }
+                            setOnErrorListener { mp, _, _ ->
+                                speakLocalFallback(phoneticAlternative)
+                                mp.release()
+                                try { tempFile.delete() } catch (e: Exception) {}
+                                true
+                            }
+                            setOnCompletionListener { mp ->
+                                mp.release()
+                                try { tempFile.delete() } catch (e: Exception) {}
+                            }
+                        }
+                    } catch (e: Exception) {
+                        try { tempFile.delete() } catch (e2: Exception) {}
+                        playFallbackGeneralAudio(text, phoneticAlternative)
+                    }
+                }
+            } else {
+                playFallbackGeneralAudio(text, phoneticAlternative)
+            }
         }
     }
 
@@ -949,19 +960,211 @@ class FidelViewModel(application: Application) : AndroidViewModel(application), 
                     else -> 1.0f to 1.0f
                 }
                 try {
+                    val isAmharic = phoneticAlternative.any { it.code in 0x1200..0x137F }
+                    if (isAmharic) {
+                        val amharicLocale = Locale("am", "ET")
+                        val supported = tts?.isLanguageAvailable(amharicLocale)
+                        if (supported != TextToSpeech.LANG_NOT_SUPPORTED && supported != TextToSpeech.LANG_MISSING_DATA) {
+                            tts?.setLanguage(amharicLocale)
+                        } else {
+                            // Amharic is not locally supported; avoid reading long story paragraphs with a terrible English accent
+                            if (phoneticAlternative.length > 30) {
+                                Log.w("FidelViewModel", "Amharic local TTS is not supported, skipping long text fallback to prevent English accent.")
+                                return@launch
+                            }
+                            tts?.setLanguage(Locale.US)
+                        }
+                    } else {
+                        tts?.setLanguage(Locale.US)
+                    }
+
                     tts?.setPitch(pitchValue)
                     tts?.setSpeechRate(speedValue)
                     tts?.speak(phoneticAlternative, TextToSpeech.QUEUE_FLUSH, null, null)
                 } catch (e: Exception) {
                     Log.e("FidelViewModel", "Local TTS voice setting failed: ${e.message}")
-                    tts?.speak(phoneticAlternative, TextToSpeech.QUEUE_FLUSH, null, null)
+                    try {
+                        tts?.speak(phoneticAlternative, TextToSpeech.QUEUE_FLUSH, null, null)
+                    } catch (e2: Exception) {}
                 }
             }
         }
     }
 
-    fun speakAmharicLetterWeb(character: String, fallbackPhonetic: String) {
-        speak(character, fallbackPhonetic)
+    // --- Fidel Audio Library ---
+    private val _cachedLettersCount = MutableStateFlow(0)
+    val cachedLettersCount: StateFlow<Int> = _cachedLettersCount.asStateFlow()
+
+    private val _isPreloading = MutableStateFlow(false)
+    val isPreloading: StateFlow<Boolean> = _isPreloading.asStateFlow()
+
+    private val _preloadProgress = MutableStateFlow(0f)
+    val preloadProgress: StateFlow<Float> = _preloadProgress.asStateFlow()
+
+    private val _preloadStatusText = MutableStateFlow("")
+    val preloadStatusText: StateFlow<String> = _preloadStatusText.asStateFlow()
+
+    private var preloadJob: kotlinx.coroutines.Job? = null
+
+    fun getLibraryAudioFile(character: String): File {
+        val dir = File(mediaContext.filesDir, "fidel_audio_library")
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+        return File(dir, "fidel_${character.hashCode()}.mp3")
+    }
+
+    fun isLibraryAudioCached(character: String): Boolean {
+        val file = getLibraryAudioFile(character)
+        return file.exists() && file.length() > 0
+    }
+
+    fun updateCachedLettersCount() {
+        viewModelScope.launch(Dispatchers.IO) {
+            var count = 0
+            FidelData.families.forEach { family ->
+                family.letters.forEach { letter ->
+                    if (isLibraryAudioCached(letter.character)) {
+                        count++
+                    }
+                }
+            }
+            _cachedLettersCount.value = count
+        }
+    }
+
+    fun startPreloadingAllAudioClips() {
+        if (_isPreloading.value) return
+        preloadJob = viewModelScope.launch(Dispatchers.IO) {
+            _isPreloading.value = true
+            _preloadProgress.value = 0f
+            _preloadStatusText.value = "Initializing library preloading..."
+
+            val allLetters = FidelData.families.flatMap { it.letters }
+            val total = allLetters.size
+            var processed = 0
+
+            for (letter in allLetters) {
+                if (!isActive) break
+                val file = getLibraryAudioFile(letter.character)
+                if (!file.exists() || file.length() == 0L) {
+                    _preloadStatusText.value = "Generating sound for ${letter.character} (${letter.phonetic})..."
+                    val success = suspendCoroutine<Boolean> { continuation ->
+                        val (voiceName, voiceDesc) = getGeminiVoiceSettings()
+                        fetchGeminiTtsAudio(letter.character, voiceName, voiceDesc, isStory = false) { tempFile ->
+                            if (tempFile != null) {
+                                try {
+                                    tempFile.copyTo(file, overwrite = true)
+                                    tempFile.delete()
+                                    continuation.resume(true)
+                                } catch (e: Exception) {
+                                    Log.e("FidelViewModel", "Failed to copy preload file: ${e.message}")
+                                    continuation.resume(false)
+                                }
+                            } else {
+                                continuation.resume(false)
+                            }
+                        }
+                    }
+                    if (!success) {
+                        delay(200)
+                    } else {
+                        delay(300)
+                    }
+                }
+                processed++
+                _preloadProgress.value = processed.toFloat() / total
+                updateCachedLettersCount()
+            }
+
+            _isPreloading.value = false
+            _preloadStatusText.value = "Fidel Audio Library is fully synchronized!"
+        }
+    }
+
+    fun stopPreloading() {
+        preloadJob?.cancel()
+        _isPreloading.value = false
+        _preloadStatusText.value = "Preloading paused."
+    }
+
+    fun playFidelAudioFromLibrary(character: String, fallbackPhonetic: String) {
+        if (character != "Difficulty mode updated" && !character.startsWith("ሰላም") && !character.startsWith("የአማርኛ")) {
+            stopStorySpeech()
+        }
+        if (!userProgress.value.textToSpeechEnabled) return
+
+        val cachedFile = getLibraryAudioFile(character)
+        if (cachedFile.exists() && cachedFile.length() > 0) {
+            viewModelScope.launch(Dispatchers.Main) {
+                try {
+                    android.media.MediaPlayer().apply {
+                        setAudioAttributes(
+                            android.media.AudioAttributes.Builder()
+                                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                                .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                                .build()
+                        )
+                        setDataSource(getAudioContext(), android.net.Uri.fromFile(cachedFile))
+                        prepare()
+                        start()
+                        setOnCompletionListener {
+                            release()
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("FidelViewModel", "Failed to play cached library audio for $character, falling back to TTS", e)
+                    speak(character, fallbackPhonetic)
+                }
+            }
+        } else {
+            val (voiceName, voiceDesc) = getGeminiVoiceSettings()
+            fetchGeminiTtsAudio(character, voiceName, voiceDesc, isStory = false) { tempFile ->
+                if (tempFile != null) {
+                    viewModelScope.launch(Dispatchers.IO) {
+                        try {
+                            tempFile.copyTo(cachedFile, overwrite = true)
+                            tempFile.delete()
+                            updateCachedLettersCount()
+                        } catch (e: Exception) {
+                            Log.e("FidelViewModel", "Failed to cache letter audio in library: ${e.message}")
+                        }
+                    }
+                    viewModelScope.launch(Dispatchers.Main) {
+                        try {
+                            android.media.MediaPlayer().apply {
+                                setAudioAttributes(
+                                    android.media.AudioAttributes.Builder()
+                                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                                        .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                                        .build()
+                                )
+                                setDataSource(getAudioContext(), android.net.Uri.fromFile(tempFile))
+                                prepare()
+                                start()
+                                setOnCompletionListener {
+                                    release()
+                                }
+                            }
+                        } catch (e: Exception) {
+                            speak(character, fallbackPhonetic)
+                        }
+                    }
+                } else {
+                    speak(character, fallbackPhonetic)
+                }
+            }
+        }
+    }
+
+    fun speakAmharicLetterWeb(character: String, fallbackPhonetic: String, word: String = "", translit: String = "") {
+        if (word.isNotEmpty() && word != character) {
+            val textToSpeak = "$character - $word"
+            val fallback = "$fallbackPhonetic , $translit"
+            speak(textToSpeak, fallback)
+        } else {
+            playFidelAudioFromLibrary(character, fallbackPhonetic)
+        }
     }
 
     fun speakAmharicSuccessWeb(character: String, fallbackPhonetic: String, encouragementAmharic: String, encouragementPhonetic: String) {
@@ -1230,14 +1433,16 @@ class FidelViewModel(application: Application) : AndroidViewModel(application), 
             // Speak a small introduction or acknowledgment in the selected voice!
             val greeting = when (voice) {
                 "KID" -> "ሰላም! እኔ ሚሚ ነኝ። አብረን እንማር!" // "Hi! I'm Mimi. Let's learn together!"
-                "BABA", "CHUNI" -> "ሰላም! እኔ ባባ ነኝ። አብረን እንማር!" // "Hi! I'm Baba. Let's learn together!"
+                "BABA" -> "ሰላም! እኔ ባባ ነኝ። አብረን እንማር!" // "Hi! I'm Baba. Let's learn together!"
+                "CHUNI" -> "ሰላም! እኔ ቺቺ ነኝ። አብረን እንማር!" // "Hi! I'm Chichi. Let's learn together!"
                 "ELDER" -> "ሰላም ልጄ! እኔ የኔታ ነኝ። ጎበዝ!" // "Hi child! I'm Yeneta. Excellent!"
                 "TEACHER" -> "ሰላም ተማሪዎች! እኔ መምህርት አልማዝ ነኝ።" // "Hello students! I'm Teacher Almaz."
                 else -> "የአማርኛ ድምፅ መሪ ተቀይሯል።" // "Amharic voice guide has changed."
             }
             val phonetic = when (voice) {
                 "KID" -> "Selam! Ine Mimi negn. Abren innimar!"
-                "BABA", "CHUNI" -> "Selam! Ine Baba negn. Abren innimar!"
+                "BABA" -> "Selam! Ine Baba negn. Abren innimar!"
+                "CHUNI" -> "Selam! Ine Chichi negn. Abren innimar!"
                 "ELDER" -> "Selam lije! Ine Yeneta negn. Gobez!"
                 "TEACHER" -> "Selam temariwoch! Ine Memhirt Almaz negn."
                 else -> "Amharic voice guide changed."

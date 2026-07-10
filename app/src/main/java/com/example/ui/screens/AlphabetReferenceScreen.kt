@@ -427,7 +427,7 @@ fun PosterGridView(
                         Card(
                             modifier = Modifier
                                 .width(76.dp)
-                                .height(58.dp)
+                                .height(72.dp)
                                 .padding(horizontal = 4.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
@@ -463,7 +463,7 @@ fun PosterGridView(
                             Card(
                                 modifier = Modifier
                                     .width(68.dp)
-                                    .height(58.dp)
+                                    .height(72.dp)
                                     .padding(horizontal = 2.dp, vertical = 2.dp)
                                     .clickable { onLetterClicked(letter) }
                                     .testTag("ref_chart_cell_${letter.character}"),
@@ -492,6 +492,16 @@ fun PosterGridView(
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = accentColor.copy(alpha = 0.82f),
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Spacer(modifier = Modifier.height(1.dp))
+                                    Text(
+                                        text = "${letter.emoji} ${letter.word}",
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = accentColor.copy(alpha = 0.9f),
                                         textAlign = TextAlign.Center,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
@@ -624,6 +634,16 @@ fun CardsListView(
                                         color = accentTextColor.copy(alpha = 0.7f),
                                         textAlign = TextAlign.Center
                                     )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "${letter.emoji} ${letter.word}",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = accentTextColor,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
                             }
                         }
@@ -651,7 +671,12 @@ fun InteractiveDictionaryDialog(
     
     // Play pronunciation immediately on load
     LaunchedEffect(letter) {
-        viewModel.speakAmharicLetterWeb(letter.character, letter.ttsPhonetic)
+        viewModel.speakAmharicLetterWeb(
+            character = letter.character,
+            fallbackPhonetic = letter.ttsPhonetic,
+            word = letter.word,
+            translit = letter.translit
+        )
     }
     
     // Whenever simulation runs, trigger animation
@@ -737,7 +762,12 @@ fun InteractiveDictionaryDialog(
                                     )
                                     .border(2.dp, getOrderTextAccent(letter.order).copy(alpha = 0.5f), RoundedCornerShape(20.dp))
                                     .clickable {
-                                        viewModel.speakAmharicLetterWeb(letter.character, letter.ttsPhonetic)
+                                        viewModel.speakAmharicLetterWeb(
+                                            character = letter.character,
+                                            fallbackPhonetic = letter.ttsPhonetic,
+                                            word = letter.word,
+                                            translit = letter.translit
+                                        )
                                     }
                                     .testTag("dict_letter_speaker_anchor"),
                                 contentAlignment = Alignment.Center

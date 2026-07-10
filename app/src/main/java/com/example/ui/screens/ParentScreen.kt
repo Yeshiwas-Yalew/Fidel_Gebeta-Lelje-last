@@ -171,6 +171,15 @@ fun ParentScreen(
     } else {
         // ENTIRE PARENTAL REPORT & SETTINGS HUB
         val sessions by viewModel.learningSessions.collectAsState()
+        val cachedCount by viewModel.cachedLettersCount.collectAsState()
+        val isPreloading by viewModel.isPreloading.collectAsState()
+        val preloadProgress by viewModel.preloadProgress.collectAsState()
+        val preloadStatusText by viewModel.preloadStatusText.collectAsState()
+
+        LaunchedEffect(Unit) {
+            viewModel.updateCachedLettersCount()
+        }
+
         var newPin by remember { mutableStateOf(progress.parentPin) }
         val scrollState = rememberScrollState()
 
@@ -2261,7 +2270,7 @@ fun ParentScreen(
                         // Amharic Teaching Voice Selector
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
@@ -2271,91 +2280,155 @@ fun ParentScreen(
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text("Amharic Teacher Voice 🎙️", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text("Pronunciation Voice Profiles Settings 🎙️", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                     Text(
-                                        text = "Select a tutor's voice style & speed for all pronunciations",
+                                        text = "Toggle voice profiles below to configure speech style, tone and pacing for all pronunciation guides. Parents can tap the preview button to sample each voice.",
                                         fontSize = 11.sp,
                                         color = MaterialTheme.colorScheme.outline
                                     )
                                 }
                             }
 
-                            Row(
+                            val currentVoice = progress.teachingVoice
+                            
+                            // Beautiful vertical list of advanced Voice Profiles
+                            Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                val currentVoice = progress.teachingVoice
-                                val row1 = listOf(
-                                    Triple("DEFAULT", "Aster 👩‍🏫", "Standard"),
-                                    Triple("KID", "Mimi 👧", "Energetic"),
-                                    Triple("ELDER", "Yeneta 👴", "Elderly")
-                                )
-                                val row2 = listOf(
-                                    Triple("TEACHER", "Almaz 👩", "Native Voice"),
-                                    Triple("BABA", "Baba 👦", "Boy Voice")
+                                val profiles = listOf(
+                                    Triple("DEFAULT", "Aster አስቴር 👩‍🏫", "Standard pronunciation, clear, patient and balanced. Highly recommended for daily practice."),
+                                    Triple("KID", "Mimi ሚሚ 👧", "Energetic, playful and high-pitched child tutor. Keeps toddlers and younger children active."),
+                                    Triple("BABA", "Baba ባባ 👦", "Friendly and bright boy tutor voice. Warm, natural pacing designed for conversational comfort."),
+                                    Triple("ELDER", "Yeneta የኔታ 👴", "Wise, slow, grandfatherly, deeply traditional voice. Highly respectful Amharic pacing."),
+                                    Triple("TEACHER", "Teacher Almaz አልማዝ 👩", "Professional, highly precise and articulate classroom voice. Ideal for perfect accent training."),
+                                    Triple("CHUNI", "Chichi ቺቺ 🐒", "Joyful, sweet and lively monkey buddy helper. Highly animated and cute for gamified challenges.")
                                 )
 
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                profiles.forEach { (id, title, description) ->
+                                    val isSelected = currentVoice == id
+                                    
+                                    Card(
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                        ),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .border(
+                                                width = if (isSelected) 2.dp else 1.dp,
+                                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                                shape = RoundedCornerShape(16.dp)
+                                            )
+                                            .clickable { viewModel.updateTeachingVoice(id) }
+                                            .testTag("voice_profile_card_$id")
                                     ) {
-                                        row1.forEach { (id, name, desc) ->
-                                            val isSelected = currentVoice == id
-                                            Box(
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .clip(RoundedCornerShape(12.dp))
-                                                    .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                                                    .border(
-                                                        width = if (isSelected) 2.dp else 1.dp,
-                                                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.3f),
-                                                        shape = RoundedCornerShape(12.dp)
-                                                    )
-                                                    .clickable { viewModel.updateTeachingVoice(id) }
-                                                    .padding(vertical = 8.dp, horizontal = 4.dp)
-                                                    .testTag("voice_chip_$id"),
-                                                contentAlignment = Alignment.Center
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.weight(1f),
+                                                verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                    Text(text = name, fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1)
-                                                    Text(text = desc, fontSize = 9.sp, color = MaterialTheme.colorScheme.outline, maxLines = 1)
+                                                // Status Radio icon
+                                                IconButton(
+                                                    onClick = { viewModel.updateTeachingVoice(id) },
+                                                    modifier = Modifier.size(24.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = if (isSelected) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
+                                                        contentDescription = if (isSelected) "Selected" else "Select",
+                                                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                                                    )
+                                                }
+                                                
+                                                Spacer(modifier = Modifier.width(10.dp))
+                                                
+                                                Column(modifier = Modifier.fillMaxWidth()) {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Text(
+                                                            text = title,
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 13.sp,
+                                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                                        )
+                                                        if (isSelected) {
+                                                            Spacer(modifier = Modifier.width(6.dp))
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .clip(RoundedCornerShape(6.dp))
+                                                                    .background(MaterialTheme.colorScheme.primary)
+                                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                            ) {
+                                                                Text("Active", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Text(
+                                                        text = description,
+                                                        fontSize = 11.sp,
+                                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                    
+                                                    Spacer(modifier = Modifier.height(4.dp))
+                                                    // Micro-badges for Voice specs
+                                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                        val (tone, speed, pitch) = when (id) {
+                                                            "DEFAULT" -> Triple("Gentle & Warm", "Normal (1.0x)", "Medium")
+                                                            "KID" -> Triple("Enthusiastic", "Fast (1.05x)", "High")
+                                                            "BABA" -> Triple("Friendly", "Normal (1.0x)", "Medium-Low")
+                                                            "ELDER" -> Triple("Wise Elder", "Slow (0.85x)", "Low")
+                                                            "TEACHER" -> Triple("Articulate", "Normal (1.0x)", "Medium")
+                                                            "CHUNI" -> Triple("Super Joyful", "Normal (1.0x)", "High")
+                                                            else -> Triple("Tutor", "Normal", "Medium")
+                                                        }
+                                                        
+                                                        listOf(tone, speed, pitch).forEach { label ->
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .clip(RoundedCornerShape(4.dp))
+                                                                    .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant)
+                                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                            ) {
+                                                                Text(
+                                                                    text = label, 
+                                                                    fontSize = 9.sp, 
+                                                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                    fontWeight = FontWeight.Medium
+                                                                )
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                             }
-                                        }
-                                    }
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        row2.forEach { (id, name, desc) ->
-                                            val isSelected = currentVoice == id || (id == "BABA" && currentVoice == "CHUNI")
-                                            Box(
+                                            
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            
+                                            // Play/Preview Speaker Button
+                                            IconButton(
+                                                onClick = {
+                                                    viewModel.updateTeachingVoice(id)
+                                                },
                                                 modifier = Modifier
-                                                    .weight(1f)
-                                                    .clip(RoundedCornerShape(12.dp))
-                                                    .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                                                    .border(
-                                                        width = if (isSelected) 2.dp else 1.dp,
-                                                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.3f),
-                                                        shape = RoundedCornerShape(12.dp)
-                                                    )
-                                                    .clickable { viewModel.updateTeachingVoice(id) }
-                                                    .padding(vertical = 8.dp, horizontal = 4.dp)
-                                                    .testTag("voice_chip_$id"),
-                                                contentAlignment = Alignment.Center
+                                                    .size(36.dp)
+                                                    .clip(CircleShape)
+                                                    .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f))
+                                                    .testTag("voice_preview_$id")
                                             ) {
-                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                    Text(text = name, fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1)
-                                                    Text(text = desc, fontSize = 9.sp, color = MaterialTheme.colorScheme.outline, maxLines = 1)
-                                                }
+                                                Icon(
+                                                    imageVector = Icons.Default.VolumeUp,
+                                                    contentDescription = "Preview voice",
+                                                    tint = if (isSelected) Color.White else MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
                                             }
                                         }
-                                        Spacer(modifier = Modifier.weight(1f))
                                     }
                                 }
                             }
@@ -2423,6 +2496,176 @@ fun ParentScreen(
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold
                                     )
+                                }
+                            }
+                        }
+
+                        Divider()
+
+                        // Fidel Audio Library Management Block
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.LibraryMusic,
+                                    contentDescription = "Audio library icon",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text("Fidel Audio Library 📚🔊", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                    Text(
+                                        text = "Download and cache native high-quality pronunciation sound files for all 231 Amharic letters. Cached clips enable offline learning with zero-latency playback.",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.outline
+                                    )
+                                }
+                            }
+
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .border(
+                                        width = 1.dp,
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                        shape = RoundedCornerShape(16.dp)
+                                    )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = "Library Sync Status",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp
+                                            )
+                                            Text(
+                                                text = "$cachedCount of 231 sound clips saved locally",
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+
+                                        if (cachedCount == 231) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(Color(0xFF4CAF50).copy(alpha = 0.15f))
+                                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Fully Loaded",
+                                                    color = Color(0xFF4CAF50),
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        } else {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                            ) {
+                                                Text(
+                                                    text = "${(cachedCount * 100) / 231}% Cached",
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // Progress bar
+                                    LinearProgressIndicator(
+                                        progress = { cachedCount.toFloat() / 231f },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(8.dp)
+                                            .clip(RoundedCornerShape(4.dp)),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                    )
+
+                                    if (isPreloading) {
+                                        Column(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            LinearProgressIndicator(
+                                                progress = { preloadProgress },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(4.dp)
+                                                    .clip(RoundedCornerShape(2.dp)),
+                                                color = MaterialTheme.colorScheme.secondary,
+                                                trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                            )
+                                            Text(
+                                                text = preloadStatusText,
+                                                fontSize = 10.sp,
+                                                color = MaterialTheme.colorScheme.secondary,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                    }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.End,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        if (isPreloading) {
+                                            Button(
+                                                onClick = { viewModel.stopPreloading() },
+                                                shape = RoundedCornerShape(12.dp),
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = MaterialTheme.colorScheme.error
+                                                ),
+                                                modifier = Modifier.testTag("stop_preloading_button")
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Pause,
+                                                    contentDescription = "Pause icon",
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text("Pause Sync", fontSize = 12.sp)
+                                            }
+                                        } else {
+                                            Button(
+                                                onClick = { viewModel.startPreloadingAllAudioClips() },
+                                                shape = RoundedCornerShape(12.dp),
+                                                enabled = cachedCount < 231,
+                                                modifier = Modifier.testTag("start_preloading_button")
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Sync,
+                                                    contentDescription = "Sync icon",
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = if (cachedCount == 0) "Synchronize All Sounds" else "Resume Sound Sync",
+                                                    fontSize = 12.sp
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

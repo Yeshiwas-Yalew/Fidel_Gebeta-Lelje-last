@@ -31,6 +31,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -372,9 +373,11 @@ fun LearnScreen(
                                                 .aspectRatio(1.0f)
                                                 .clickable {
                                                     explorerLetter = letter to family
-                                                    viewModel.speak(
-                                                        "${letter.character} ፦ ${letter.word}",
-                                                        if (letter.translit.isNotEmpty()) "${letter.ttsPhonetic}... as in... ${letter.translit}" else letter.ttsPhonetic
+                                                    viewModel.speakAmharicLetterWeb(
+                                                        character = letter.character,
+                                                        fallbackPhonetic = letter.ttsPhonetic,
+                                                        word = letter.word,
+                                                        translit = letter.translit
                                                     )
                                                 }
                                                 .testTag("letter_card_${letter.character}"),
@@ -405,6 +408,16 @@ fun LearnScreen(
                                                     fontWeight = FontWeight.Bold,
                                                     color = textAccentColor.copy(alpha = 0.8f),
                                                     textAlign = TextAlign.Center
+                                                )
+                                                Spacer(modifier = Modifier.height(2.dp))
+                                                Text(
+                                                    text = "${letter.emoji} ${letter.word}",
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = textAccentColor.copy(alpha = 0.9f),
+                                                    textAlign = TextAlign.Center,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
                                                 )
                                             }
                                         }
@@ -489,7 +502,12 @@ fun LearnScreen(
                                         .fillMaxWidth()
                                         .padding(8.dp)
                                         .clickable {
-                                            viewModel.speakAmharicLetterWeb(activeLetter!!.character, activeLetter!!.ttsPhonetic)
+                                            viewModel.speakAmharicLetterWeb(
+                                                character = activeLetter!!.character,
+                                                fallbackPhonetic = activeLetter!!.ttsPhonetic,
+                                                word = activeLetter!!.word,
+                                                translit = activeLetter!!.translit
+                                            )
                                         }
                                         .testTag("learn_active_letter_card")
                                 ) {
@@ -530,7 +548,12 @@ fun LearnScreen(
                                                     )
                                                     IconButton(
                                                         onClick = {
-                                                            viewModel.speakAmharicLetterWeb(activeLetter!!.character, activeLetter!!.ttsPhonetic)
+                                                            viewModel.speakAmharicLetterWeb(
+                                                                character = activeLetter!!.character,
+                                                                fallbackPhonetic = activeLetter!!.ttsPhonetic,
+                                                                word = activeLetter!!.word,
+                                                                translit = activeLetter!!.translit
+                                                            )
                                                         },
                                                         modifier = Modifier
                                                             .size(32.dp)
@@ -570,7 +593,12 @@ fun LearnScreen(
 
                                         FilledIconButton(
                                             onClick = {
-                                                viewModel.speakAmharicLetterWeb(activeLetter!!.character, activeLetter!!.ttsPhonetic)
+                                                viewModel.speakAmharicLetterWeb(
+                                                    character = activeLetter!!.character,
+                                                    fallbackPhonetic = activeLetter!!.ttsPhonetic,
+                                                    word = activeLetter!!.word,
+                                                    translit = activeLetter!!.translit
+                                                )
                                             },
                                             colors = IconButtonDefaults.filledIconButtonColors(
                                                 containerColor = MaterialTheme.colorScheme.primary
@@ -622,9 +650,11 @@ fun LearnScreen(
                                         .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
                                         .clickable {
                                             activeLetter = letter
-                                            viewModel.speak(
-                                                "${letter.character} ፦ ${letter.word}",
-                                                if (letter.translit.isNotEmpty()) "${letter.ttsPhonetic}... as in... ${letter.translit}" else letter.ttsPhonetic
+                                            viewModel.speakAmharicLetterWeb(
+                                                character = letter.character,
+                                                fallbackPhonetic = letter.ttsPhonetic,
+                                                word = letter.word,
+                                                translit = letter.translit
                                             )
                                         }
                                         .padding(vertical = 4.dp)
