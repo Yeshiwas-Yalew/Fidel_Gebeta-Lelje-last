@@ -723,56 +723,111 @@ class FidelViewModel(application: Application) : AndroidViewModel(application), 
         }
     }
 
-    private fun playFallbackStoryAudio(text: String, playNext: () -> Unit) {
-        viewModelScope.launch(Dispatchers.Main) {
-            try {
-                val encoded = java.net.URLEncoder.encode(text, "UTF-8")
-                val url = "https://translate.google.com/translate_tts?ie=UTF-8&tl=am&client=tw-ob&q=$encoded"
-
-                storyMediaPlayer = android.media.MediaPlayer().apply {
-                    setAudioAttributes(
-                        android.media.AudioAttributes.Builder()
-                            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
-                            .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
-                            .build()
-                    )
-                    setDataSource(getAudioContext(), android.net.Uri.parse(url))
-                    prepareAsync()
-                    setOnPreparedListener {
-                        applyVoiceParams()
-                        start()
-                    }
-                    setOnErrorListener { mp, _, _ ->
-                        speakLocalFallback(text)
-                        mp.release()
-                        viewModelScope.launch {
-                            delay(4000)
-                            if (isStoryPlaying) {
-                                currentStoryParagraphIndex++
-                                playNext()
-                            }
-                        }
-                        true
-                    }
-                    setOnCompletionListener { mp ->
-                        mp.release()
-                        storyMediaPlayer = null
-                        if (isStoryPlaying) {
-                            currentStoryParagraphIndex++
-                            playNext()
-                        }
+    private fun splitTextIntoTtsChunks(text: String, maxLen: Int = 100): List<String> {
+        val chunks = mutableListOf<String>()
+        // First, split by sentence endings
+        val segments = text.split(Regex("[።?\\n]")).map { it.trim() }.filter { it.isNotEmpty() }
+        
+        for (segment in segments) {
+            if (segment.length <= maxLen) {
+                chunks.add(segment)
+            } else {
+                // Split further by sub-delimiters: ፥, comma, or space
+                val subSegments = segment.split(Regex("[፥,፡]")).map { it.trim() }.filter { it.isNotEmpty() }
+                var currentChunk = ""
+                for (sub in subSegments) {
+                    if (currentChunk.isEmpty()) {
+                        currentChunk = sub
+                    } else if (currentChunk.length + sub.length + 1 <= maxLen) {
+                        currentChunk += "፥ $sub"
+                    } else {
+                        chunks.add(currentChunk)
+                        currentChunk = sub
                     }
                 }
-            } catch (e: Exception) {
-                speakLocalFallback(text)
-                viewModelScope.launch {
-                    delay(4000)
+                if (currentChunk.isNotEmpty()) {
+                    chunks.add(currentChunk)
+                }
+            }
+        }
+        return chunks
+    }
+
+    private fun playFallbackStoryAudio(text: String, playNext: () -> Unit) {
+        viewModelScope.launch(Dispatchers.Main) {
+            val chunks = splitTextIntoTtsChunks(text)
+            if (chunks.isEmpty()) {
+                if (isStoryPlaying) {
+                    currentStoryParagraphIndex++
+                    playNext()
+                }
+                return@launch
+            }
+
+            var chunkIndex = 0
+
+            fun playNextChunk() {
+                if (!isStoryPlaying || chunkIndex >= chunks.size) {
                     if (isStoryPlaying) {
                         currentStoryParagraphIndex++
                         playNext()
                     }
+                    return
+                }
+
+                val chunkText = chunks[chunkIndex]
+                try {
+                    val encoded = java.net.URLEncoder.encode(chunkText, "UTF-8")
+                    val url = "https://translate.google.com/translate_tts?ie=UTF-8&tl=am&client=tw-ob&q=$encoded"
+                    val headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.3")
+
+                    storyMediaPlayer = android.media.MediaPlayer().apply {
+                        setAudioAttributes(
+                            android.media.AudioAttributes.Builder()
+                                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                                .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                                .build()
+                        )
+                        setDataSource(getAudioContext(), android.net.Uri.parse(url), headers)
+                        prepareAsync()
+                        setOnPreparedListener {
+                            applyVoiceParams()
+                            start()
+                        }
+                        setOnErrorListener { mp, _, _ ->
+                            speakLocalFallback(chunkText)
+                            mp.release()
+                            viewModelScope.launch {
+                                delay(3000)
+                                if (isStoryPlaying) {
+                                    chunkIndex++
+                                    playNextChunk()
+                                }
+                            }
+                            true
+                        }
+                        setOnCompletionListener { mp ->
+                            mp.release()
+                            storyMediaPlayer = null
+                            if (isStoryPlaying) {
+                                chunkIndex++
+                                playNextChunk()
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    speakLocalFallback(chunkText)
+                    viewModelScope.launch {
+                        delay(3000)
+                        if (isStoryPlaying) {
+                            chunkIndex++
+                            playNextChunk()
+                        }
+                    }
                 }
             }
+
+            playNextChunk()
         }
     }
 
@@ -791,7 +846,7 @@ class FidelViewModel(application: Application) : AndroidViewModel(application), 
                              .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
                              .build()
                      )
-                     setDataSource(getAudioContext(), android.net.Uri.parse(url))
+                     setDataSource(getAudioContext(), android.net.Uri.parse(url), mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.3"))
                     prepareAsync()
                     setOnPreparedListener {
                         applyVoiceParams()
@@ -1197,8 +1252,8 @@ class FidelViewModel(application: Application) : AndroidViewModel(application), 
     fun addCoinsAndStars(coinsToAdd: Int, starsToAdd: Int) {
         viewModelScope.launch {
             val current = userProgress.value
-            val nextCoins = current.coins + coinsToAdd
-            val nextStars = current.stars + starsToAdd
+            val nextCoins = (current.coins + coinsToAdd).coerceAtLeast(0)
+            val nextStars = (current.stars + starsToAdd).coerceAtLeast(0)
             
             val unlockedList = current.unlockedStickers.split(",").map { it.trim() }.toMutableSet()
             val newUnlocks = mutableListOf<StickerBadge>()

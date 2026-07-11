@@ -35,9 +35,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -127,13 +130,18 @@ object GeminiRestEvaluator {
                                     You are an expert Amharic language pronunciation specialist in our kids learning application.
                                     Listen carefully to the child's recorded voice audio and evaluate their pronunciation of the target Amharic character/word: "$targetChar" (pronounced: "$targetPhonetic").
                                     
+                                    Carefully validate and evaluate the pronunciation accuracy using these criteria:
+                                    1. Phonetic correctness: Did the child correctly sound out the consonant structure of "$targetChar"?
+                                    2. Vowel-class accuracy: Does the vowel suffix (e.g. 1st form 'ä', 2nd form 'u', 3rd form 'i', 4th form 'a', etc.) match the target pronunciation "$targetPhonetic"?
+                                    3. Clarity and confidence: Is the voice clearly decipherable, or is it distorted/muffled?
+                                    
                                     Determine if they made a correct or very close attempt.
                                     Return a strictly formatted JSON object with these fields:
                                     {
                                       "score": <integer from 20 to 100 representing correctness score. Give high scores >= 75 if they pronounced it closely>,
                                       "encouragement": "<A sweet, loving, short encouraging sentence in Amharic followed by English translation. Example: 'ጎበዝ! በጣም ጎበዝ ልጅ!' (Excellent! Very smart child!)>",
                                       "recognized": "<The Amharic characters or phonetic representation you heard the child pronounce>",
-                                      "tips": "<A single short, constructive tip in English for parents to help their child, e.g., 'Ensure they breathe out gently to sound the letter.'>"
+                                      "tips": "<A single short, constructive tip in English for parents to help their child improve, e.g., 'Ensure they breathe out gently to sound the letter.'>"
                                     }
                                     
                                     Return ONLY the JSON. Do not include markdown formatting like ```json or any conversational filler.
@@ -191,7 +199,16 @@ object GeminiRestEvaluator {
                 .getJSONObject(0)
                 .getString("text")
 
-            val resultJson = JSONObject(textOutput.trim())
+            var cleanText = textOutput.trim()
+            if (cleanText.startsWith("```")) {
+                cleanText = cleanText.removePrefix("```json").removePrefix("```")
+                if (cleanText.endsWith("```")) {
+                    cleanText = cleanText.removeSuffix("```")
+                }
+                cleanText = cleanText.trim()
+            }
+
+            val resultJson = JSONObject(cleanText)
             return@withContext EvaluationResult(
                 score = resultJson.getInt("score"),
                 encouragement = resultJson.getString("encouragement"),
@@ -256,7 +273,19 @@ fun VoicePracticeScreen(
     var recordingDurationSec by remember { mutableStateOf(0) }
     var isAnalyzing by remember { mutableStateOf(false) }
     var evaluationResult by remember { mutableStateOf<EvaluationResult?>(null) }
+    var showLocalCelebration by remember { mutableStateOf(false) }
+    var showLocalPenalty by remember { mutableStateOf(false) }
     var maxAmplitudeValue by remember { mutableStateOf(0f) }
+    var peakAmplitudeValue by remember { mutableStateOf(0f) }
+    var validationErrorMessage by remember { mutableStateOf<String?>(null) }
+    var isPlayingRecordedAudio by remember { mutableStateOf(false) }
+    var recordedPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            recordedPlayer?.release()
+        }
+    }
 
     // MediaRecorder handles
     var mediaRecorder by remember { mutableStateOf<MediaRecorder?>(null) }
@@ -691,33 +720,59 @@ fun VoicePracticeScreen(
                             } else {
                                 if (isRecording) {
                                     stopAndAnalyzeVoice(
-                                        audioFile,
-                                        activeItem,
-                                        viewModel,
+                                        audioFile = audioFile,
+                                        activeItem = activeItem,
+                                        viewModel = viewModel,
+                                        recordingDurationSec = recordingDurationSec,
+                                        peakAmplitudeValue = peakAmplitudeValue,
                                         onRecordStopped = { isRecording = false },
+                                        onValidationError = { err -> validationErrorMessage = if (err.isEmpty()) null else err },
                                         onAnalysisStarted = { isAnalyzing = true },
                                         onAnalysisFinished = { res ->
                                             isAnalyzing = false
                                             evaluationResult = res
+                                            if (res.score >= 75) {
+                                                showLocalCelebration = true
+                                            } else {
+                                                showLocalPenalty = true
+                                            }
                                         }
                                     )
                                 } else {
                                     startVoiceRecording(
-                                        context,
-                                        audioFile,
-                                        onRecordStarted = { isRecording = true },
+                                        context = context,
+                                        audioFile = audioFile,
+                                        onRecordStarted = { 
+                                            isRecording = true 
+                                            peakAmplitudeValue = 0f
+                                            validationErrorMessage = null
+                                            evaluationResult = null
+                                        },
                                         onTimerUpdate = { seconds -> recordingDurationSec = seconds },
-                                        onAmplitudeUpdate = { amp -> maxAmplitudeValue = amp },
+                                        onAmplitudeUpdate = { amp -> 
+                                            maxAmplitudeValue = amp
+                                            if (amp > peakAmplitudeValue) {
+                                                peakAmplitudeValue = amp
+                                            }
+                                        },
                                         onAutoStop = {
                                             stopAndAnalyzeVoice(
-                                                audioFile,
-                                                activeItem,
-                                                viewModel,
+                                                audioFile = audioFile,
+                                                activeItem = activeItem,
+                                                viewModel = viewModel,
+                                                recordingDurationSec = recordingDurationSec,
+                                                peakAmplitudeValue = peakAmplitudeValue,
                                                 onRecordStopped = { isRecording = false },
+                                                onValidationError = { err -> validationErrorMessage = if (err.isEmpty()) null else err },
                                                 onAnalysisStarted = { isAnalyzing = true },
                                                 onAnalysisFinished = { res ->
                                                     isAnalyzing = false
                                                     evaluationResult = res
+                                                    if (res.score >= 75) {
+                                                        showLocalCelebration = true
+                                                    } else {
+                                                        showLocalPenalty = true
+                                                    }
                                                 }
                                             )
                                         }
@@ -781,6 +836,46 @@ fun VoicePracticeScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline
                     )
+                }
+
+                AnimatedVisibility(
+                    visible = validationErrorMessage != null,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    validationErrorMessage?.let { errMsg ->
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text("📢", fontSize = 28.sp)
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "የድምጽ ማስተካከያ (Voice Tip)",
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = errMsg,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -880,6 +975,58 @@ fun VoicePracticeScreen(
                                     )
                                 }
 
+                                if (audioFile.exists() && audioFile.length() > 0) {
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Button(
+                                        onClick = {
+                                            if (isPlayingRecordedAudio) {
+                                                recordedPlayer?.stop()
+                                                recordedPlayer?.release()
+                                                recordedPlayer = null
+                                                isPlayingRecordedAudio = false
+                                            } else {
+                                                try {
+                                                    val player = MediaPlayer().apply {
+                                                        setDataSource(audioFile.absolutePath)
+                                                        prepare()
+                                                        start()
+                                                        setOnCompletionListener {
+                                                            isPlayingRecordedAudio = false
+                                                            release()
+                                                            recordedPlayer = null
+                                                        }
+                                                    }
+                                                    recordedPlayer = player
+                                                    isPlayingRecordedAudio = true
+                                                } catch (e: Exception) {
+                                                    Log.e("VoicePractice", "Error playing recording", e)
+                                                }
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = if (isPlayingRecordedAudio) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary,
+                                            contentColor = Color.White
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
+                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                        modifier = Modifier
+                                            .height(40.dp)
+                                            .testTag("play_recorded_voice_button")
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isPlayingRecordedAudio) Icons.Default.Stop else Icons.Default.VolumeUp,
+                                            contentDescription = if (isPlayingRecordedAudio) "Stop playback" else "Listen to my voice",
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = if (isPlayingRecordedAudio) "Stop Listening" else "Listen to My Voice 🎧",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+
                                 Spacer(modifier = Modifier.height(12.dp))
 
                                 // Split tips for parents
@@ -919,6 +1066,16 @@ fun VoicePracticeScreen(
                     }
                 }
             }
+
+            SuccessCelebrationOverlay(
+                visible = showLocalCelebration,
+                onDismiss = { showLocalCelebration = false }
+            )
+
+            PenaltyRetryOverlay(
+                visible = showLocalPenalty,
+                onDismiss = { showLocalPenalty = false }
+            )
         }
     }
 }
@@ -1003,7 +1160,10 @@ private fun stopAndAnalyzeVoice(
     audioFile: File,
     activeItem: PracticeWord,
     viewModel: FidelViewModel,
+    recordingDurationSec: Int,
+    peakAmplitudeValue: Float,
     onRecordStopped: () -> Unit,
+    onValidationError: (String) -> Unit,
     onAnalysisStarted: () -> Unit,
     onAnalysisFinished: (EvaluationResult) -> Unit
 ) {
@@ -1022,6 +1182,32 @@ private fun stopAndAnalyzeVoice(
         recorder?.release()
         ActiveRecorderRegistry.activeRecorder = null
     }
+
+    // Programmatic Validation of recorded sound
+    if (recordingDurationSec < 1) {
+        val errMsg = "The recording was too short! Please speak the letter clearly."
+        viewModel.speak("እባክዎ እንደገና ይሞክሩ። በጣም አጭር ቀረጻ ነው። (The recording is too short. Please speak the letter clearly.)", "The recording is too short. Please try again.")
+        onValidationError(errMsg)
+        return
+    }
+
+    if (!audioFile.exists() || audioFile.length() < 300) {
+        val errMsg = "No audio data was saved. Please verify your microphone permissions and try again."
+        viewModel.speak("ድምፅ አልተቀዳም። እባክዎ እንደገና ይሞክሩ። (No audio recorded. Please try again.)", "No audio recorded. Please try again.")
+        onValidationError(errMsg)
+        return
+    }
+
+    // Speak up / silence detection check (peak amplitude threshold of 1200f)
+    if (peakAmplitudeValue < 1200f) {
+        val errMsg = "We couldn't hear any vocal sound! Please speak louder and closer to the microphone."
+        viewModel.speak("ድምፅዎ በጣም አነስተኛ ነው። እባክዎ ቀረብ ብለው ጮክ ብለው ይናገሩ። (It is too quiet. Please speak closer to the microphone.)", "It is too quiet. Please speak closer to the microphone.")
+        onValidationError(errMsg)
+        return
+    }
+
+    // Clear previous validation error and start evaluation
+    onValidationError("")
 
     onAnalysisStarted()
 
@@ -1092,7 +1278,12 @@ private fun stopAndAnalyzeVoice(
                 encouragementPhonetic = "Great job"
             )
         } else {
-            viewModel.speak("Nice try! Press the microphone to practice speaking again.", "Nice try! Press the microphone to practice speaking again.")
+            // Apply a light, playful -1 Coin penalty as a gamification punishment to try again
+            viewModel.addCoinsAndStars(-1, 0)
+            viewModel.speak(
+                "ወዮ! አልተሳካም። እባክዎ እንደገና ይሞክሩ! (Oops! Tickle penalty! Try again to practice!)",
+                "Oops! Tickle penalty! Try again to practice speaking!"
+            )
         }
     }
 }
@@ -1102,4 +1293,384 @@ object ActiveRecorderRegistry {
     var activeRecorder: MediaRecorder? = null
     var timerJob: Job? = null
     var amplitudeJob: Job? = null
+}
+
+data class VoiceConfettiParticle(
+    val color: Color,
+    val size: Float,
+    val speedX: Float,
+    val speedY: Float,
+    val rotationSpeed: Float,
+    val isStar: Boolean
+)
+
+@Composable
+fun SuccessCelebrationOverlay(
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    coins: Int = 10,
+    stars: Int = 5
+) {
+    if (!visible) return
+
+    // Trigger auto-dismiss after 2.2 seconds
+    LaunchedEffect(Unit) {
+        delay(2200)
+        onDismiss()
+    }
+
+    val animProgress = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        animProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 2200, easing = LinearOutSlowInEasing)
+        )
+    }
+
+    val particles = remember {
+        List(50) {
+            val colors = listOf(
+                Color(0xFFFFD54F), // Gold
+                Color(0xFF81C784), // Green
+                Color(0xFF64B5F6), // Blue
+                Color(0xFFE57373), // Red
+                Color(0xFFBA68C8), // Purple
+                Color(0xFFFFB74D)  // Orange
+            )
+            val angle = Random.nextFloat() * 2 * Math.PI
+            val speed = 150f + Random.nextFloat() * 450f
+            VoiceConfettiParticle(
+                color = colors.random(),
+                size = 12f + Random.nextFloat() * 20f,
+                speedX = (Math.cos(angle) * speed).toFloat(),
+                speedY = (Math.sin(angle) * speed).toFloat(),
+                rotationSpeed = -150f + Random.nextFloat() * 300f,
+                isStar = Random.nextBoolean()
+            )
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f))
+            .clickable(enabled = false) {}, // absorb clicks to prevent background interactions
+        contentAlignment = Alignment.Center
+    ) {
+        // Custom interactive stars/confetti flying animation
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val width = size.width
+            val height = size.height
+            val t = animProgress.value
+            val gravity = 250f * t
+            
+            for (p in particles) {
+                val x = width / 2f + p.speedX * t
+                val y = height / 2f + p.speedY * t + gravity * t
+                val rot = p.rotationSpeed * t
+                val particleAlpha = (1f - t).coerceIn(0f, 1f)
+                
+                drawContext.canvas.save()
+                drawContext.canvas.translate(x, y)
+                drawContext.canvas.rotate(rot)
+                
+                if (p.isStar) {
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        val outerRadius = p.size
+                        val innerRadius = p.size / 2f
+                        val points = 5
+                        var currentAngle = -Math.PI / 2
+                        val angleIncrement = Math.PI / points
+                        
+                        for (i in 0 until points * 2) {
+                            val r = if (i % 2 == 0) outerRadius else innerRadius
+                            val px = (Math.cos(currentAngle) * r).toFloat()
+                            val py = (Math.sin(currentAngle) * r).toFloat()
+                            if (i == 0) {
+                                moveTo(px, py)
+                            } else {
+                                lineTo(px, py)
+                            }
+                            currentAngle += angleIncrement
+                        }
+                        close()
+                    }
+                    drawPath(
+                        path = path,
+                        color = p.color.copy(alpha = particleAlpha)
+                    )
+                } else {
+                    drawCircle(
+                        color = p.color.copy(alpha = particleAlpha),
+                        radius = p.size / 2f
+                    )
+                }
+                drawContext.canvas.restore()
+            }
+        }
+        val infiniteTransition = rememberInfiniteTransition(label = "star_sparkle")
+        val rotateAngle by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(6000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "rotate"
+        )
+
+        var isAppearing by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            isAppearing = true
+        }
+
+        val scale by animateFloatAsState(
+            targetValue = if (isAppearing) 1.2f else 0.1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+            ),
+            label = "scale"
+        )
+
+        val alpha by animateFloatAsState(
+            targetValue = if (isAppearing) 1.0f else 0f,
+            animationSpec = tween(500),
+            label = "alpha"
+        )
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .graphicsLayer(
+                    scaleX = scale,
+                    scaleY = scale,
+                    alpha = alpha
+                )
+                .background(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(32.dp)
+                )
+                .border(
+                    width = 4.dp,
+                    color = Color(0xFFFFD54F), // Gold border
+                    shape = RoundedCornerShape(32.dp)
+                )
+                .padding(32.dp)
+        ) {
+            // Big rotating glowing star
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(120.dp)
+            ) {
+                // Outer glowing halo
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .scale(1.2f)
+                        .background(Color(0xFFFFD54F).copy(alpha = 0.25f), shape = CircleShape)
+                )
+                
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = "Success Star",
+                    tint = Color(0xFFFFC107), // Gold
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .rotate(rotateAngle)
+                )
+                
+                Text(
+                    text = "⭐",
+                    fontSize = 32.sp,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "ጎበዝ! 👏", // "Bravo!" / "Well done!"
+                fontSize = 36.sp,
+                fontWeight = FontWeight.Black,
+                color = Color(0xFF2E7D32)
+            )
+
+            Text(
+                text = "BRILLIANT!",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    color = Color(0xFFFFD54F).copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text("🪙", fontSize = 20.sp)
+                        Text("+$coins Gems", fontWeight = FontWeight.Bold, color = Color(0xFFE65100))
+                    }
+                }
+
+                Surface(
+                    color = Color(0xFF81C784).copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text("⭐", fontSize = 20.sp)
+                        Text("+$stars Stars", fontWeight = FontWeight.Bold, color = Color(0xFF1B5E20))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PenaltyRetryOverlay(
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    deductedCoins: Int = 1
+) {
+    if (!visible) return
+
+    // Trigger auto-dismiss after 2.2 seconds
+    LaunchedEffect(Unit) {
+        delay(2200)
+        onDismiss()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f))
+            .clickable(enabled = false) {}, // absorb clicks to prevent background interactions
+        contentAlignment = Alignment.Center
+    ) {
+        var isAppearing by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            isAppearing = true
+        }
+
+        val scale by animateFloatAsState(
+            targetValue = if (isAppearing) 1.1f else 0.1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+            ),
+            label = "scale"
+        )
+
+        val alpha by animateFloatAsState(
+            targetValue = if (isAppearing) 1.0f else 0f,
+            animationSpec = tween(500),
+            label = "alpha"
+        )
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .graphicsLayer(
+                    scaleX = scale,
+                    scaleY = scale,
+                    alpha = alpha
+                )
+                .background(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(32.dp)
+                )
+                .border(
+                    width = 4.dp,
+                    color = MaterialTheme.colorScheme.error, // Red border for penalty
+                    shape = RoundedCornerShape(32.dp)
+                )
+                .padding(32.dp)
+        ) {
+            // Light, playful penalty emoji/graphic
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(120.dp)
+            ) {
+                val infiniteTransition = rememberInfiniteTransition(label = "error_pulse")
+                val pulseScale by infiniteTransition.animateFloat(
+                    initialValue = 1.0f,
+                    targetValue = 1.25f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(1200, easing = FastOutSlowInEasing),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "pulse"
+                )
+                
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .scale(pulseScale)
+                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f), shape = CircleShape)
+                )
+                
+                Text(
+                    text = "👾", // Playful tickle monster / penalty character
+                    fontSize = 72.sp,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "እንደገና ይሞክሩ! 🤫", // "Try again!"
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.error
+            )
+
+            Text(
+                text = "TICKLE PENALTY!",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.outline
+            )
+
+            Text(
+                text = "Let's correct and practice again!",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                color = MaterialTheme.colorScheme.errorContainer,
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text("🪙", fontSize = 18.sp)
+                    Text("-$deductedCoins Gem Penalty", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onErrorContainer)
+                }
+            }
+        }
+    }
 }
